@@ -29,6 +29,15 @@ export function formatTime(ts: number): string {
   return `${hh}:${mm}`;
 }
 
+/** 时间戳 → YYYY-MM-DD HH:mm:ss（用户消息悬浮显示输入时间，ui-design.md 4.5） */
+export function formatDateTime(ts: number): string {
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(
+    d.getHours()
+  )}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 /** 毫秒 → "X.X 秒" */
 export function formatDuration(ms: number): string {
   const safe = Number.isFinite(ms) && ms >= 0 ? ms : 0;

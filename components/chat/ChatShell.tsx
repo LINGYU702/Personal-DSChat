@@ -7,7 +7,28 @@ import { WelcomeView } from "@/components/chat/WelcomeView";
 import { MessageList } from "@/components/chat/MessageList";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import { ScrollBar, ScrollContainerContext } from "@/components/ui/scrollbar";
 import { useChatStore } from "@/lib/store/useChatStore";
+import { cn } from "@/lib/utils";
+
+/** 会话内容区：消息流或欢迎视图（按会话渲染，供切换过渡复用） */
+function SessionContent({
+  sessionId,
+  onAsk,
+}: {
+  sessionId: string | null;
+  onAsk: (q: string) => void;
+}) {
+  const session = useChatStore((s) =>
+    s.sessions.find((x) => x.id === sessionId)
+  );
+  if (!session) return null;
+  return session.messages.length > 0 ? (
+    <MessageList sessionId={session.id} />
+  ) : (
+    <WelcomeView onAsk={onAsk} />
+  );
+}
 
 /**
  * 整体布局（ui-design.md 第 1 节）：
@@ -16,12 +37,54 @@ import { useChatStore } from "@/lib/store/useChatStore";
 export function ChatShell() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const loaded = useChatStore((s) => s.loaded);
-  const activeSession = useChatStore((s) =>
-    s.sessions.find((x) => x.id === s.activeSessionId)
-  );
+  const activeSessionId = useChatStore((s) => s.activeSessionId);
   const sendMessage = useChatStore((s) => s.sendMessage);
 
-  const hasMessages = (activeSession?.messages.length ?? 0) > 0;
+  // 会话切换两阶段原位过渡（ui-design.md 3.4/4.5）：
+  // activeSessionId 变化 → 内容层原位 fade-out（不重挂载，滚动位置保持，
+  // 避免新滚动容器 scrollTop=0 首帧闪到对话顶部），定时器结束后在同一层
+  // 原位切换会话内容并 fade-in；首次渲染不触发
+  const [shownId, setShownId] = React.useState<string | null>(activeSessionId);
+  const [leavingId, setLeavingId] = React.useState<string | null>(null);
+  const fadeTimerRef = React.useRef<number | null>(null);
+  const skipFirstRef = React.useRef(true);
+
+  React.useEffect(() => {
+    if (skipFirstRef.current) {
+      skipFirstRef.current = false;
+      return;
+    }
+    if (activeSessionId === shownId) {
+      // 过渡期间切回当前会话：取消进行中的切换，避免定时器把 shownId 切到错误会话
+      if (fadeTimerRef.current !== null) {
+        window.clearTimeout(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
+      setLeavingId(null);
+      return;
+    }
+    setLeavingId(shownId);
+    if (fadeTimerRef.current !== null) window.clearTimeout(fadeTimerRef.current);
+    fadeTimerRef.current = window.setTimeout(() => {
+      setShownId(activeSessionId);
+      setLeavingId(null);
+    }, 200);
+  }, [activeSessionId, shownId]);
+
+  React.useEffect(
+    () => () => {
+      if (fadeTimerRef.current !== null) window.clearTimeout(fadeTimerRef.current);
+    },
+    []
+  );
+
+  // 自定义滚动条（ui-design.md 3.5）：内容层注册滚动容器，切换过渡原位进行，
+  // 滚动条持续绑定同一容器。用 state 而非 ref 持有容器：ScrollBar 的 effect
+  // 依赖 containerEl 变化重跑，容器晚挂载（首条消息）时也能绑定监听（见 scrollbar.tsx）
+  const [scrollEl, setScrollEl] = React.useState<HTMLDivElement | null>(null);
+  const registerScroll = React.useCallback((el: HTMLDivElement | null) => {
+    setScrollEl(el);
+  }, []);
 
   const handleAsk = (question: string) => {
     void sendMessage(question);
@@ -45,14 +108,30 @@ export function ChatShell() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
-        <div className="min-h-0 flex-1 overflow-hidden">
-          {hasMessages ? (
-            <MessageList />
-          ) : (
-            <WelcomeView onAsk={handleAsk} />
-          )}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {/* 内容层：切换过渡原位进行——不重挂载（无 key），旧内容 fade-out 期间
+              pointer-events-none，定时器结束后原位切换为新会话并 fade-in（ui-design.md 3.4） */}
+          <div
+            className={cn(
+              "relative min-h-0 flex-1 overflow-hidden",
+              leavingId !== null && "pointer-events-none"
+            )}
+          >
+            <div
+              className={cn(
+                "h-full",
+                leavingId !== null ? "animate-fade-out" : "animate-fade-in"
+              )}
+            >
+              <ScrollContainerContext.Provider value={registerScroll}>
+                <SessionContent sessionId={shownId} onAsk={handleAsk} />
+              </ScrollContainerContext.Provider>
+            </div>
+          </div>
+          <ChatInput />
+          {/* 自定义滚动条：轨道贯穿消息区 + 输入区，直达页面底部（ui-design.md 3.5） */}
+          <ScrollBar containerEl={scrollEl} />
         </div>
-        <ChatInput />
       </div>
       <SettingsDialog />
     </div>

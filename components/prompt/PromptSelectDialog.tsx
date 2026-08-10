@@ -57,7 +57,7 @@ export function PromptSelectDialog({
               type="button"
               onClick={() => handleSelect(p.id)}
               className={cn(
-                "w-full rounded-lg border px-3 py-2.5 text-left transition-colors",
+                "w-full rounded-xl border px-3 py-2.5 text-left transition-colors",
                 p.id === currentId
                   ? "border-primary/50 bg-primary/5"
                   : "border-border hover:bg-muted"
@@ -89,7 +89,7 @@ export function PromptSelectDialog({
             onOpenChange(false);
             openSettings();
           }}
-          className="mt-1 w-full rounded-lg border border-dashed border-border px-3 py-2 text-center text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="mt-1 w-full rounded-xl border border-dashed border-border px-3 py-2 text-center text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           管理 System Prompt 库…
         </button>

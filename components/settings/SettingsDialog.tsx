@@ -136,7 +136,7 @@ export function SettingsDialog() {
                   autoFocus={!getApiKey()}
                   autoComplete="off"
                   spellCheck={false}
-                  className="h-9 w-full rounded-md border border-border bg-transparent pr-10 pl-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+                  className="h-9 w-full rounded-lg border border-border bg-transparent pr-10 pl-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
                 />
                 <button
                   type="button"
@@ -336,7 +336,7 @@ export function SettingsDialog() {
 
       {/* 保存反馈 toast */}
       {saved && (
-        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 animate-slide-up rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
           设置已保存
         </div>
       )}

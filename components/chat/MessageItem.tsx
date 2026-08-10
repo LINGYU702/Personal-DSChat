@@ -12,6 +12,7 @@ import {
 import { ReasoningPanel } from "@/components/chat/ReasoningPanel";
 import { Markdown } from "@/lib/markdown/render";
 import { useChatStore } from "@/lib/store/useChatStore";
+import { formatDateTime } from "@/lib/utils";
 import type { StoredMessage } from "@/lib/types";
 
 /**
@@ -117,7 +118,7 @@ function UserMessage({
           disabled={streaming}
           autoFocus
           aria-label="编辑消息"
-          className="max-w-[85%] resize-y rounded-[12px] border border-border bg-user-bubble px-4 py-2.5 text-[15px] leading-[1.7] outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 sm:max-w-[75%]"
+          className="max-w-[85%] resize-y rounded-2xl border border-border bg-user-bubble px-4 py-2.5 text-[15px] leading-[1.7] outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 sm:max-w-[75%]"
         />
         <div className="flex items-center gap-1.5">
           <button
@@ -148,19 +149,25 @@ function UserMessage({
   return (
     <div className="flex justify-end py-2.5">
       <div className="group flex max-w-[85%] flex-col items-end gap-1 sm:max-w-[75%]">
-        <div className="rounded-[12px] bg-user-bubble px-4 py-2.5 text-[15px] leading-[1.7] whitespace-pre-wrap">
+        <div className="rounded-2xl bg-user-bubble px-4 py-2.5 text-[15px] leading-[1.7] whitespace-pre-wrap">
           {message.content}
         </div>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          disabled={streaming}
-          className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-0"
-          title="编辑此消息（创建分支）"
-        >
-          <Pencil className="size-3" />
-          编辑
-        </button>
+        {/* 输入时间 + 编辑（hover 同组显隐，ui-design.md 4.5） */}
+        <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums select-none">
+            {formatDateTime(message.createdAt)}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            disabled={streaming}
+            className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-0"
+            title="编辑此消息（创建分支）"
+          >
+            <Pencil className="size-3" />
+            编辑
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -194,7 +201,7 @@ function MessageActions({
       <button
         type="button"
         onClick={() => void handleCopy()}
-        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         aria-label={copied ? "已复制" : "复制回答"}
         title={copied ? "已复制" : "复制回答"}
       >
@@ -204,7 +211,7 @@ function MessageActions({
         <button
           type="button"
           onClick={onStop}
-          className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+          className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
           aria-label="停止生成"
           title="停止生成"
         >
@@ -214,7 +221,7 @@ function MessageActions({
         <button
           type="button"
           onClick={onRetry}
-          className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label="重新生成（创建新分支）"
           title="重新生成（创建新分支）"
         >

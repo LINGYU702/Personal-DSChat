@@ -46,6 +46,99 @@
   --color-code-bg: var(--code-bg);
   --color-ring: var(--ring);
   --radius: 0.5rem;
+
+  /* 动画 token（docs/04-frontend/ui-design.md 3.4）：
+   * 均使用 transform: scale/translateY —— 与 Tailwind v4 独立
+   * translate/scale 属性（Radix popper 定位类）互不冲突 */
+  --animate-fade-in: fade-in 0.15s ease-out;
+  --animate-fade-out: fade-out 0.12s ease-in forwards;
+  --animate-zoom-in: zoom-in 0.15s ease-out;
+  --animate-zoom-out: zoom-out 0.12s ease-in forwards;
+  --animate-slide-up: slide-up 0.2s ease-out;
+  --animate-slide-down: slide-down 0.15s ease-in forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zoom-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* 自定义滚动条容器（ui-design.md 3.5）：隐藏原生滚动条，由 ScrollBar 组件接管 */
+.custom-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 无障碍：用户偏好减少动效时关闭（ui-design.md 3.4） */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-out,
+  .animate-zoom-in,
+  .animate-zoom-out,
+  .animate-slide-up,
+  .animate-slide-down {
+    animation: none;
+  }
 }
 
 @layer base {

@@ -56,7 +56,7 @@ export function PromptBadge() {
               <DialogTitle>System Prompt（已锁定）</DialogTitle>
               <DialogDescription>{name}</DialogDescription>
             </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto rounded-md border border-border bg-muted/40 p-3 text-sm leading-relaxed whitespace-pre-wrap">
+            <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-border bg-muted/40 p-3 text-sm leading-relaxed whitespace-pre-wrap">
               {session.systemPromptText}
             </div>
           </DialogContent>

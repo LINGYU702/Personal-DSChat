@@ -27,7 +27,7 @@ export function ReasoningPanel({
 
   if (isStreaming) {
     return (
-      <div className="mb-2 overflow-hidden rounded-lg bg-reasoning-bg">
+      <div className="mb-2 overflow-hidden rounded-xl bg-reasoning-bg">
         <div className="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground">
           <Brain className="size-3.5" />
           深度思考中
@@ -50,7 +50,7 @@ export function ReasoningPanel({
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="mb-2 flex items-center gap-1.5 rounded-lg bg-reasoning-bg px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        className="mb-2 flex items-center gap-1.5 rounded-xl bg-reasoning-bg px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         <Brain className="size-3.5" />
         {summary}
@@ -60,7 +60,7 @@ export function ReasoningPanel({
   }
 
   return (
-    <div className="mb-2 overflow-hidden rounded-lg bg-reasoning-bg">
+    <div className="mb-2 overflow-hidden rounded-xl bg-reasoning-bg">
       <button
         type="button"
         onClick={() => setExpanded(false)}

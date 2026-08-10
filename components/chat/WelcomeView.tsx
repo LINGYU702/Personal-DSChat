@@ -33,7 +33,7 @@ export function WelcomeView({ onAsk }: { onAsk: (q: string) => void }) {
             type="button"
             onClick={() => onAsk(q)}
             className={cn(
-              "rounded-xl border border-border bg-background p-4 text-left text-sm text-foreground transition-colors",
+              "rounded-2xl border border-border bg-background p-4 text-left text-sm text-foreground transition-colors",
               "hover:border-primary/40 hover:bg-muted"
             )}
           >

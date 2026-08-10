@@ -128,7 +128,7 @@ export function ChatInput() {
         <div className="mx-auto mb-2 max-w-3xl">
           <div
             className={cn(
-              "flex items-center justify-between gap-2 rounded-lg px-4 py-2.5 text-sm",
+              "flex items-center justify-between gap-2 rounded-xl px-4 py-2.5 text-sm",
               isModelError
                 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                 : "bg-red-500/10 text-red-600 dark:text-red-400"
@@ -150,7 +150,7 @@ export function ChatInput() {
 
       <div className="mx-auto w-full max-w-3xl">
         {/* 输入容器 */}
-        <div className="rounded-xl border border-border bg-background shadow-sm transition-colors focus-within:border-ring">
+        <div className="rounded-2xl border border-border bg-background shadow-sm transition-colors focus-within:border-ring">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -200,7 +200,7 @@ export function ChatInput() {
 
                 {/* 思考强度选择 */}
                 {effortOpen && thinkingEnabled && (
-                  <div className="absolute bottom-full left-0 z-30 mb-2 rounded-lg border border-border bg-background p-3 shadow-lg">
+                  <div className="absolute bottom-full left-0 z-30 mb-2 animate-slide-up rounded-xl border border-border bg-background p-3 shadow-lg">
                     <p className="mb-2 text-xs text-muted-foreground">
                       思考强度
                     </p>

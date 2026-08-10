@@ -129,20 +129,26 @@ export function Sidebar({
     e.preventDefault();
     const startX = e.clientX;
     const startWidth = sidebarWidth;
+    const finish = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", finish);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
     const onMove = (ev: MouseEvent) => {
       const w = startWidth + (ev.clientX - startX);
+      // 拖到最小宽度 → 直接收起（ui-design.md 4.7），无需松手
+      if (w <= SIDEBAR_MIN_WIDTH) {
+        finish();
+        setSidebarCollapsed(true);
+        return;
+      }
       setSidebarWidth(
         Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, w))
       );
     };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("mouseup", finish);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   };
@@ -254,7 +260,7 @@ export function Sidebar({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="搜索会话"
               aria-label="搜索会话"
-              className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </div>
         </div>
@@ -274,7 +280,7 @@ export function Sidebar({
                   <li
                     key={session.id}
                     className={cn(
-                      "group flex items-center gap-1 rounded-lg px-2 py-2 transition-colors",
+                      "group flex items-center gap-1 rounded-xl px-2 py-2 transition-colors",
                       isActive
                         ? "bg-muted"
                         : "hover:bg-muted/60"
@@ -290,7 +296,7 @@ export function Sidebar({
                           if (e.key === "Enter") commitEdit();
                           if (e.key === "Escape") setEditingId(null);
                         }}
-                        className="min-w-0 flex-1 rounded-sm border border-border bg-background px-1.5 py-0.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                        className="min-w-0 flex-1 rounded-md border border-border bg-background px-1.5 py-0.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                         aria-label="重命名会话"
                       />
                     ) : (
@@ -334,7 +340,7 @@ export function Sidebar({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/60"
+                className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-muted/60"
               >
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                   D
@@ -455,9 +461,9 @@ export function Sidebar({
         </DialogContent>
       </Dialog>
 
-      {/* 操作反馈 toast（与设置页保存提示同款样式） */}
+      {/* 操作反馈 toast（与设置页保存提示同款样式；进入动画见 ui-design.md 3.4） */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+        <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 animate-slide-up rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
           {toast}
         </div>
       )}

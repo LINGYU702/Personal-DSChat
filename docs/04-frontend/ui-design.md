@@ -90,12 +90,44 @@ app/page.tsx（客户端）
 - 主内容区 `max-width: 768px`（`max-w-3xl`）居中；消息流上下 `py-6`
 - 字号：正文 15px / 1.7 行高；代码块 13.5px
 - 字体栈：`Inter` / 系统中文字体（`-apple-system, "PingFang SC", "Microsoft YaHei"`）
-- 圆角：按钮 8px；气泡 12px；输入区容器 12px
+- 圆角（整体加大，标准档位）：按钮 8px（`rounded-lg`）；消息气泡 / 输入区容器 / 对话框 / 卡片 16px（`rounded-2xl`）；浮层菜单（下拉/选择/Tooltip）12px（`rounded-xl`）；胶囊类交互件（开关胶囊、分支胶囊、toast、头像）`rounded-full`；`rounded-sm` 仅用于内联小控件（重命名输入框等），不再用于主要交互件
 - 边栏宽可调（默认 260px，范围 200~480px）；顶栏高 56px
 
 ### 3.3 图标
 
 - lucide-react：`Plus`（新对话）、`Search`、`Settings`、`Moon/Sun`、`Send`、`Square`（停止）、`Copy`、`RefreshCw`（重试）、`Globe`（联网）、`Brain`/`Sparkles`（深度思考）、`ChevronDown`、`X`、`Pencil`（重命名）、`Trash2`、`Menu`（汉堡）、`ChevronsLeft`（收起边栏）、`Download`/`Upload`（导出/导入数据）
+
+### 3.5 自定义滚动条（消息区）
+
+**动机**：浏览器原生滚动条不随主题变色（暗色模式下亮色轨道突兀）。
+
+**实现**：
+- 消息区滚动容器（MessageList）加 `custom-scrollbar` 类隐藏原生滚动条（`scrollbar-width: none` + `::-webkit-scrollbar{display:none}`）
+- `components/ui/scrollbar.tsx` 提供 `<ScrollBar>`：固定于 ChatShell 主区（消息区 + 输入区）最右侧，**轨道贯穿到页面底部**（`absolute inset-y-0 right-0`，非止于输入框上方）；仅桌面（`md+`）显示，移动端保留原生滚动
+- 滑块几何：高度 = `max(40, clientHeight²/scrollHeight)`，位置按 `scrollTop/(scrollHeight-clientHeight)` 比例映射；`scroll` 事件（rAF 节流）与 ResizeObserver（容器 + 内容层）驱动更新
+- 交互：滑块可拖动（window 级 mousemove，拖动中禁文本选择）；轨道容器 `pointer-events-none` 保证输入区右缘点击穿透不受影响
+- **主题契合**：滑块颜色用主题变量 `bg-foreground/20 hover:bg-foreground/40`，亮/暗模式自动适配
+- 通信：`ScrollContainerContext` 注册滚动容器——ChatShell 内容层注册；会话切换过渡为**原位进行**（不重挂载、无覆盖层），滚动条持续绑定同一容器，切换过程不重绑、不闪烁
+- **注册用 state 而非 ref**：ChatShell 用 `useState` 保存容器元素并经 `containerEl` prop 传入 `<ScrollBar>`；ScrollBar 的监听 effect 依赖 `containerEl`，容器晚于 ScrollBar 挂载（首条消息、会话切换重挂载）时 effect 会重跑并重新绑定 scroll/ResizeObserver——若用可变 ref 注册，effect 只在挂载时读一次，晚注册的容器永远不会被观察到，滑块不显示
+
+### 3.4 动画规范
+
+动画 token 定义于 `globals.css`（`@theme` 内 `--animate-*`，keyframes 全局），统一时长与缓动；`prefers-reduced-motion: reduce` 时全部关闭：
+
+| token | keyframes | 时长/缓动 | 用途 |
+|---|---|---|---|
+| `animate-fade-in` / `animate-fade-out` | opacity 0↔1 | 150ms / 120ms ease | 遮罩、Tooltip |
+| `animate-zoom-in` / `animate-zoom-out` | opacity + scale(0.95↔1) | 150ms / 120ms ease | Dialog 内容、下拉/选择菜单 |
+| `animate-slide-up` / `animate-slide-down` | opacity + translateY(8px↔0) | 200ms / 150ms ease | Toast、会话切换、思考强度面板 |
+
+应用规则：
+
+- **Dialog**（设置、删除确认、导入确认、System Prompt 选择/详情，全部场景）：Overlay `fade`、Content `zoom`；进入/退出动画均由 `data-state` 变体类驱动，Radix Presence 检测到 closed 态动画后延迟卸载（动画播完再移除 DOM），不引入 forceMount（避免未打开时内容常驻挂载）
+- **DropdownMenu / Select**：仅进入动画（`data-[state=open]:animate-zoom-in`），配合 Radix popper 的 `translate` 定位类（独立 CSS `translate` 属性，与动画 `transform: scale` 不冲突）
+- **Tooltip**：进入 `fade-in`
+- **Toast**（导出/导入/保存提示）：进入 `slide-up`
+- **思考强度面板**（ChatInput 自绘浮层）：进入 `fade-in` + `slide-up`
+- **会话切换（两阶段原位过渡）**：`activeSessionId` 变化时，旧会话内容**在原内容层原位**播放 `fade-out`（120ms，期间 `pointer-events-none`），随后在**同一层**原位切换为新会话内容并播放 `fade-in`（150ms）出现。**关键：切换全程不重挂载内容层/滚动容器**（避免新容器 `scrollTop=0` 导致首帧闪到对话顶部），旧内容淡出时滚动位置原样保持；新内容首帧前（`useLayoutEffect`）已滚到底部。由 ChatShell 维护 `shownId`/`leavingId` 状态机 + 定时器实现；欢迎视图↔对话视图切换同样生效；首次加载不触发过渡
 
 ## 4. 关键交互规范
 
@@ -126,11 +158,13 @@ app/page.tsx（客户端）
 
 ### 4.5 消息流
 
-- 用户消息：右侧气泡，浅灰底、无 Markdown（纯文本保留换行）；hover 显示「编辑」按钮（移动端 focus 时可见）
+- 用户消息：右侧气泡，浅灰底、无 Markdown（纯文本保留换行）；hover 显示「编辑」按钮（移动端 focus 时可见），**编辑按钮左侧同时显示该消息的输入时间**（`YYYY-MM-DD HH:mm:ss`，与编辑按钮同组显隐）
+- **日期分隔线**：按路径中 user 消息（提问）的本地日期分组，某条 user 消息与前一条 user 消息不在同一天（提问跨到新的一天）时，在该消息上方插入分隔线——左右两条横线 + 中央日期标签（`YYYY年M月D日`，即分隔线以下对话的发生日期）
 - 助手消息：左侧整宽，含思考面板/搜索状态/Markdown 正文/操作行/用量行；「重新生成」按钮常显（创建新分支，FR-12）
 - 分支切换行：父消息有多个子分支时，在其下方显示各分支摘要胶囊（当前分支主色高亮、可点击切换，FR-12）
 - 生成中：正文末尾显示闪烁光标（`▍` 动画）；思考面板实时滚动
 - 自动滚动：新内容到达时若用户未上翻则滚到底；用户上翻暂停自动滚动
+- 会话切换：切换会话（含欢迎视图↔对话视图）时主内容区原位 `fade-out` → `fade-in`（见 3.4）；切换后滚动位置重置到底部（`useLayoutEffect` 在绘制前完成，新会话首帧即显示底部，无顶部闪烁）
 - 会话首条消息的标题自动生成：取用户首条输入前 30 字符（截断加 …）
 
 ### 4.6 消息编辑与分支（FR-12）
@@ -149,6 +183,7 @@ app/page.tsx（客户端）
 
 **桌面端可调宽与收起（FR-14）**：
 - 边栏右缘有拖拽手柄（垂直细条，`cursor-col-resize`，`hidden md:block`）：按住拖动实时调整宽度，范围 200~480px（拖动中经 mousemove 即时生效，松手写回设置）
+- **拖到底即收起**：拖动中宽度到达最小阈值（200px）时立即收起（`sidebarCollapsed=true`，无需松手），并解除拖动监听；收起后宽度保留当前值，展开恢复该宽度
 - 收起入口：拖拽手柄上方提供「收起」按钮（ChevronsLeft 图标）；收起后边栏完全隐藏（`-translate-x-full`），顶栏左侧出现汉堡按钮点击展开
 - 宽度（`sidebarWidth`）与收起状态（`sidebarCollapsed`）持久化于设置（localStorage，经 useSettingsStore），刷新后恢复
 - 移动端抽屉宽度沿用 260px 并限制 `max-w-[85vw]`，不受桌面宽度设置影响
@@ -191,3 +226,6 @@ app/page.tsx（客户端）
 - [ ] PromptSelectDialog（库选择）与 PromptBadge（锁定只读标识）
 - [ ] 移动端抽屉与桌面常驻的响应式实现
 - [ ] 深色模式切换（html.dark class + localStorage 持久化；首帧前内联脚本应用，见 settings.md 1.1）
+- [ ] 动画（3.4）：Dialog 进出动画、菜单/Tooltip 进入动画、Toast 上滑、思考强度面板、会话切换过渡
+- [ ] 边栏拖拽到最小宽度（200px）自动收起（4.7）
+- [ ] 自定义滚动条（3.5）：消息区隐藏原生滚动条、主题色滑块、轨道贯穿到页面底部

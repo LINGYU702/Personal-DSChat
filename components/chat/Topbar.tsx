@@ -63,7 +63,7 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
           }
         }}
         className={cn(
-          "flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+          "flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
           sidebarCollapsed ? "md:flex" : "md:hidden"
         )}
         aria-label="打开侧边栏"
@@ -112,14 +112,14 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
                 if (e.key === "Enter") commitEdit();
                 if (e.key === "Escape") setEditing(false);
               }}
-              className="w-40 rounded-md border border-border bg-transparent px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="w-40 rounded-lg border border-border bg-transparent px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               aria-label="重命名会话"
             />
           ) : (
             <button
               type="button"
               onClick={startEdit}
-              className="group hidden max-w-56 items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
+              className="group hidden max-w-56 items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
               title="点击重命名"
             >
               <span className="truncate">{activeSession.title}</span>

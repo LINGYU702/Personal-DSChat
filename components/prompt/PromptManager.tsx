@@ -76,7 +76,7 @@ export function PromptManager() {
         {prompts.map((p) => (
           <div
             key={p.id}
-            className="group rounded-lg border border-border px-3 py-2"
+            className="group rounded-xl border border-border px-3 py-2"
           >
             <div className="flex items-center gap-2">
               <span className="flex-1 truncate text-sm font-medium">
@@ -131,7 +131,7 @@ export function PromptManager() {
 
       {/* 新建 / 编辑表单 */}
       {editing ? (
-        <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="space-y-2 rounded-xl border border-border p-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
               {editing.id === null ? "新建 System Prompt" : "编辑 System Prompt"}
@@ -150,7 +150,7 @@ export function PromptManager() {
             onChange={(e) => setName(e.target.value)}
             placeholder="名称（必填）"
             maxLength={50}
-            className="h-8 w-full rounded-md border border-border bg-transparent px-2.5 text-sm outline-none focus:border-ring"
+            className="h-8 w-full rounded-lg border border-border bg-transparent px-2.5 text-sm outline-none focus:border-ring"
           />
           <textarea
             value={content}
@@ -158,7 +158,7 @@ export function PromptManager() {
             placeholder="System Prompt 内容（必填）"
             rows={4}
             maxLength={8000}
-            className="w-full resize-y rounded-md border border-border bg-transparent px-2.5 py-2 text-sm outline-none focus:border-ring"
+            className="w-full resize-y rounded-lg border border-border bg-transparent px-2.5 py-2 text-sm outline-none focus:border-ring"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={cancelEdit}>
@@ -178,7 +178,7 @@ export function PromptManager() {
           type="button"
           onClick={startCreate}
           className={cn(
-            "flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border",
+            "flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border",
             "px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           )}
         >
