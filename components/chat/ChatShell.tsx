@@ -15,6 +15,7 @@ import { useChatStore } from "@/lib/store/useChatStore";
  */
 export function ChatShell() {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const loaded = useChatStore((s) => s.loaded);
   const activeSession = useChatStore((s) =>
     s.sessions.find((x) => x.id === s.activeSessionId)
   );
@@ -25,6 +26,19 @@ export function ChatShell() {
   const handleAsk = (question: string) => {
     void sendMessage(question);
   };
+
+  // 启动恢复完成前：主题色全屏占位（session-storage.md 第 5 节 / chat-state.md 第 6 节），
+  // 不渲染欢迎视图/顶栏/输入区，避免「先空欢迎页、后历史对话」闪烁
+  if (!loaded) {
+    return (
+      <div className="flex h-dvh w-full items-center justify-center bg-background text-foreground">
+        <div
+          aria-label="正在恢复对话"
+          className="size-5 animate-spin rounded-full border-2 border-border border-t-primary"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">

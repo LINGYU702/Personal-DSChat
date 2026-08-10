@@ -26,6 +26,7 @@ yarn-error.log*
 .env*
 .reasonix*
 .zcode*
+session.txt
 
 # vercel
 .vercel

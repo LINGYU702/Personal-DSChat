@@ -92,6 +92,7 @@ interface ChatState {
   activeSessionId: string | null;
   streaming: boolean;               // 是否有请求进行中
   streamError: string | null;
+  loaded: boolean;                  // 启动恢复完成标记（session-storage.md 第 5 节）：loadAll 结束前为 false
 
   // actions
   newSession(): void;                                   // 新建（自动命名「新对话」，预选 defaultSystemPromptId 条目）
@@ -178,12 +179,17 @@ regenerate（retryMessage：重新生成任意 assistant 消息 → 分支）
 ## 6. 恢复流程（loadAll）
 
 ```
-页面加载 → useSettingsStore.hydrate()
+页面加载 → 内联脚本同步应用主题（settings.md 第 1.1 节，首帧前）
+         → useSettingsStore.hydrate()
          → db.getAllSessions() → setSessions
          → activeSessionId = 最近 updatedAt 的会话（或 null → 欢迎视图 + 自动新建）
+         → loaded = true（末尾统一置位，覆盖成功与空态两条分支）
 ```
 
-恢复后不自动重发任何请求；流式中的会话在刷新后按「stopped」处理（已生成内容保留，可手动重试）。
+- **首帧门控**：`loaded === false` 期间（初始状态，含 SSR 首渲）ChatShell 渲染全屏占位
+  （`bg-background` 主题色空白 + 轻量 spinner），**不渲染**欢迎视图/顶栏/输入区——
+  避免「先空欢迎页、后历史对话」的闪烁；恢复完成（含失败走空态分支）后首帧即上次所在会话。
+- 恢复后不自动重发任何请求；流式中的会话在刷新后按「stopped」处理（已生成内容保留，可手动重试）。
 
 ## 7. 边界情况
 

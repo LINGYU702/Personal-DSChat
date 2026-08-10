@@ -190,4 +190,4 @@ app/page.tsx（客户端）
 - [ ] 欢迎视图 4 个推荐问题卡片（静态数据数组）
 - [ ] PromptSelectDialog（库选择）与 PromptBadge（锁定只读标识）
 - [ ] 移动端抽屉与桌面常驻的响应式实现
-- [ ] 深色模式切换（html.dark class + localStorage 持久化）
+- [ ] 深色模式切换（html.dark class + localStorage 持久化；首帧前内联脚本应用，见 settings.md 1.1）

@@ -143,7 +143,9 @@ export function saveSettings(s: Settings) {
 ## 5. 读写时序与防抖
 
 - 会话写入防抖：流式 delta 期间 500ms 防抖合并写（chat-state.md 第 5 节）；轮次完成/新建/删除立即写。
-- 启动恢复：`loadAll()` 在客户端 `useEffect`（或 store 初始化）执行；期间 UI 显示轻量 loading（边栏 skeleton）。
+- 启动恢复：`loadAll()` 在客户端 `useEffect` 执行；chat store 增 `loaded: boolean`（初值 false，loadAll 末尾置 true，覆盖成功与空态两条分支）。
+  恢复完成前 ChatShell 渲染全屏占位（`bg-background` 主题色空白，可含轻量 spinner），**不渲染**欢迎视图/顶栏/输入区，
+  保证首帧即正确主题且不出现「先空欢迎页、后历史对话」的闪烁（chat-state.md 第 6 节）；加载失败也走空态分支并置位（显示欢迎页）。
 - 写入失败（配额满等）：捕获后 toast 提示「本地存储失败」，不阻断对话（内存态仍可用），下一轮重试。
 
 ## 6. 数据清理

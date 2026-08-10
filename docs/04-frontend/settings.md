@@ -15,6 +15,27 @@
 | 深色模式 | Switch | 跟随系统（默认亮） | `settings.darkMode` | 另在用户菜单有快捷切换 |
 | 侧边栏宽度 / 收起 | 边栏右缘拖拽 + 收起按钮（FR-14） | 260px / 展开 | `settings.sidebarWidth` / `settings.sidebarCollapsed` | 见 ui-design.md 4.7；仅桌面端生效，移动端恒为抽屉 |
 
+### 1.1 深色模式的首帧应用（防主题闪烁）
+
+`darkMode` 持久化于 `deepseek-chat.settings`（zustand persist JSON：`{"state":{"darkMode":…}}`），默认亮色。
+persist 的 localStorage 恢复是**异步**的（首帧绘制后的微任务才触发 `onRehydrateStorage` → `applyDarkMode`），
+若仅依赖 store，首帧会先以默认亮色渲染、随后才切到上次主题，出现主题闪烁。
+
+**实现约定**：在 `app/layout.tsx` 的 `<head>` 中注入内联脚本（`dangerouslySetInnerHTML`），
+在 HTML 解析阶段、body 绘制前**同步**读取 `deepseek-chat.settings` 并应用 `dark` class：
+
+```ts
+// 伪代码（内联脚本，IIFE）：
+// const s = JSON.parse(localStorage.getItem("deepseek-chat.settings") ?? "{}");
+// document.documentElement.classList.toggle("dark", !!(s?.state?.darkMode));
+// JSON 解析失败/无数据：静默回退默认（亮色），与 store 默认一致
+```
+
+- 主题为纯 CSS class 驱动（globals.css `:root` / `.dark` 变量），parse 阶段加 class 即首帧生效，无闪烁、无第三方依赖。
+- 脚本与 store 同源（同一 localStorage key），rehydrate 后值一致；`onRehydrateStorage` 的 `applyDarkMode` 保留（幂等兜底）。
+- `<html>` 保留 `suppressHydrationWarning`（class 由脚本先行设置，与 React 首渲不一致属预期）。
+- React 侧（page.tsx 等）**不再**重复执行 `classList.toggle`（与脚本/rehydrate 冗余，删除）。
+
 ## 2. 设置对话框交互
 
 - 入口：边栏底部用户菜单 →「设置」；未配置 Key 时发送消息 → 自动弹出并聚焦 Key 输入框
@@ -65,5 +86,6 @@ export const clearApiKey = () => localStorage.removeItem(KEY_API);
 - [ ] SettingsDialog 组件（Radix Dialog + shadcn Form 风格）
 - [ ] PromptManager 面板（库 CRUD + 设为默认，prompt-library.md 第 4.3 节）
 - [ ] useSettingsStore（persist 中间件，`partialize` 排除 apiKey 或单独字段）
+- [ ] layout `<head>` 内联脚本首帧前应用持久化主题（第 1.1 节）；page 不重复设置 class
 - [ ] apiKey 独立存取函数 + 发送前校验逻辑
 - [ ] 默认 System Prompt 选择器 + 删除条目回退内置逻辑

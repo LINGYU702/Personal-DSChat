@@ -149,6 +149,8 @@ interface ChatState {
   activeSessionId: string | null;
   streaming: boolean;
   streamError: string | null;
+  /** 启动恢复完成标记（session-storage.md 第 5 节）：loadAll 结束前为 false，UI 显示占位 */
+  loaded: boolean;
 
   newSession(): void;
   deleteSession(id: string): void;
@@ -641,6 +643,7 @@ export const useChatStore = create<ChatState>()((set, get) => {
     activeSessionId: null,
     streaming: false,
     streamError: null,
+    loaded: false,
 
     newSession: () => {
       const settings = useSettingsStore.getState();
@@ -838,6 +841,8 @@ export const useChatStore = create<ChatState>()((set, get) => {
       } else {
         set({ activeSessionId: sessions[0].id });
       }
+      // 恢复完成（成功/空态/失败均到达此处）：解除首帧占位门控
+      set({ loaded: true });
     },
   };
 });
