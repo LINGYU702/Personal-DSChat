@@ -32,10 +32,11 @@ export const MODELS = {
   pro:   { id: "deepseek-v4-pro",   label: "DeepSeek-V4 Pro" },
 } as const;
 
-// Responses API 支持开关表：官方开放 Pro 后把 false 改为 true 即可
+// Responses API 支持开关表：Flash/Pro 均已支持；新增模型只需改此处
+//（官方开放记录：Pro 于 2026 年 8 月初支持）
 export const MODEL_SUPPORT: Record<string, boolean> = {
   "deepseek-v4-flash": true,
-  "deepseek-v4-pro":   false, // 官方：2026 年 8 月初增加支持
+  "deepseek-v4-pro":   true, // 2026-08 官方开放
 };
 ```
 
@@ -158,7 +159,7 @@ function buildInput(history: StoredMessage[]): InputItem[] {
 
 ## 5. 兼容性边界（易踩坑清单）
 
-1. **`deepseek-v4-pro` 暂不支持 Responses API** → 由 `MODEL_SUPPORT` 拦截，返回 501 语义错误
+1. **模型可用性由 `MODEL_SUPPORT` 统一判定**（当前 `deepseek-v4-flash` / `deepseek-v4-pro` 均已支持）→ 不支持模型的请求由 `MODEL_SUPPORT` 拦截，返回 501 语义错误
 2. **无状态**：`previous_response_id` / `conversation` 不支持 → 客户端全量发 input
 3. **不支持 `truncation`**：输入超 1M 上下文 → 400 → 前端自动截断重试（error-handling.md）
 4. **不支持图片/文件输入**：`input_image` 块被替换为占位文本 → 本应用不做上传

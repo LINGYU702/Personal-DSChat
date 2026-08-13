@@ -9,7 +9,7 @@
 
 | 功能 | 说明 |
 |---|---|
-| 模型选择 | DeepSeek-V4 Flash / Pro（顶栏切换；Pro 待官方开放 Responses API，`lib/deepseek/models.ts` 的 `MODEL_SUPPORT` 一行开关） |
+| 模型选择 | DeepSeek-V4 Flash / Pro（顶栏切换；可用性由 `lib/deepseek/models.ts` 的 `MODEL_SUPPORT` 开关表统一控制，Flash/Pro 均已支持） |
 | 深度思考 | 开/关 + 强度（低/高/最高），对应 Responses API `reasoning.effort`；思维链可折叠查看 |
 | 联网搜索 | 服务端 `web_search` 工具（官方执行），搜索状态与引用展示 |
 | System Prompt 库 | 内置基础 Prompt + 自定义条目管理；会话级快照，首条消息发送后锁定 |
@@ -118,7 +118,7 @@ docs/
 
 ## 已知限制
 
-- **Pro 模型**：Responses API 目前仅支持 `deepseek-v4-flash`，官方称 2026 年 8 月初开放 `deepseek-v4-pro`（`MODEL_SUPPORT` 改一行配置即可启用）
+- 模型可用性由 `MODEL_SUPPORT` 开关表统一判定（`deepseek-v4-flash` / `deepseek-v4-pro` 均已支持 Responses API，见 `lib/deepseek/models.ts`）
 - 会话与 System Prompt 库仅存**本机浏览器**（IndexedDB/localStorage），无账号体系与云端同步
 - 不支持文件上传/图片理解（Responses API 输入不支持图片）
 - GitHub Pages 静态部署下无后端代理（直连 DeepSeek 官方，Key 不经第三方中转）

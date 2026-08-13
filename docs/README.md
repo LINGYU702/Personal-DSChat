@@ -34,8 +34,8 @@
 
 > ⚠️ 以下事实直接决定实现细节，实现前请再次核对 [官方文档](https://api-docs.deepseek.com/zh-cn/)。
 
-1. **Responses API 目前仅支持 `deepseek-v4-flash`，暂不支持 `deepseek-v4-pro`**（官方称 2026 年 8 月初增加支持）。
-   实现策略：UI 两个模型都可选；后端对 Pro 模型在 Responses API 不支持期间，返回明确的「暂不支持」错误提示，并在代码中预留 `MODEL_SUPPORT` 开关表，官方开放后只需改一行配置。
+1. **Responses API 已同时支持 `deepseek-v4-flash` 与 `deepseek-v4-pro`**（Pro 于 2026 年 8 月初开放）。
+   实现策略：UI 两个模型都可选；模型可用性由 `lib/deepseek/models.ts` 的 `MODEL_SUPPORT` 开关表统一判定（Flash/Pro 均为 `true`），未来新增模型只需改一行配置；对不支持模型的请求后端返回明确的「暂不支持」错误提示。
 2. **Responses API 是无状态 API**：`previous_response_id`、`conversation`、`store` 均不支持，多轮对话必须由客户端**自行维护完整 input items 列表**，每次请求全量发送。
 3. **上下文缓存自动管理**：`prompt_cache_key` / `prompt_cache_retention` 不支持；命中情况通过响应 `usage.input_tokens_details.cached_tokens` 观察。**客户端的缓存优化手段只有一种：保持请求前缀稳定不变**。
 4. **思考模式（深度思考）**：Responses API 格式通过 `reasoning: {"effort": "none"}` 关闭、`{"effort": "low|high|max"}` 开启；思考模式下 `temperature`/`top_p` 不生效。

@@ -27,7 +27,7 @@
 | code | 场景 | 说明 |
 |---|---|---|
 | `missing_api_key` | 未配置 Key 就发送 | 前端直接拦截，弹设置引导（不发请求） |
-| `model_not_supported` | 选择了 Responses API 暂不支持的模型（当前为 `deepseek-v4-pro`） | 后端 501 语义返回；文案：「该模型暂不支持 Responses API，DeepSeek 官方预计 2026 年 8 月初开放，请先使用 Flash 模型」 |
+| `model_not_supported` | 选择了 Responses API 暂不支持的模型（由 `MODEL_SUPPORT` 判定；当前 Flash/Pro 均已支持，仅未来新增模型可能触发） | 后端 501 语义返回；文案：「该模型暂不支持 Responses API，请切换为其他模型」 |
 
 ## 2. 错误响应协议（后端 → 前端）
 

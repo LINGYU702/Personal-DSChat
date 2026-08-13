@@ -137,12 +137,14 @@ export function Sidebar({
     };
     const onMove = (ev: MouseEvent) => {
       const w = startWidth + (ev.clientX - startX);
-      // 拖到最小宽度 → 直接收起（ui-design.md 4.7），无需松手
+      // 拖到最小宽度 → 立即收起（ui-design.md 4.7），无需松手；
+      // 但拖拽监听保持挂载：未松手往回拖（向右越过阈值）时重新展开并继续跟随鼠标，
+      // 只有 mouseup 才结束拖拽
       if (w <= SIDEBAR_MIN_WIDTH) {
-        finish();
         setSidebarCollapsed(true);
         return;
       }
+      setSidebarCollapsed(false);
       setSidebarWidth(
         Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, w))
       );

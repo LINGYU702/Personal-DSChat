@@ -9,8 +9,9 @@ export const MODELS: Record<
   pro: { id: "deepseek-v4-pro", label: "DeepSeek-V4 Pro" },
 };
 
-// Responses API 支持开关表：官方开放 Pro 后把 false 改为 true 即可
+// Responses API 支持开关表：Flash/Pro 均已支持；新增模型只需改此处
+//（官方开放记录：Pro 于 2026 年 8 月初支持）
 export const MODEL_SUPPORT: Record<ModelId, boolean> = {
   "deepseek-v4-flash": true,
-  "deepseek-v4-pro": false, // 官方：2026 年 8 月初增加支持
+  "deepseek-v4-pro": true, // 2026-08 官方开放
 };

@@ -153,7 +153,7 @@ app/page.tsx（客户端）
 
 ### 4.4 模型选择器
 
-- 顶栏居中下拉，选项：`DeepSeek-V4 Flash` / `DeepSeek-V4 Pro`（带小字说明，Pro 标注「即将支持」——当前 Responses API 未支持时选中后发送会被拦截提示）
+- 顶栏居中下拉，选项：`DeepSeek-V4 Flash` / `DeepSeek-V4 Pro`（两者均可正常使用；若未来模型被 `MODEL_SUPPORT` 置为不可用，选中后发送会被拦截提示）
 - 切换立即生效；会话保存自己的模型，切换会话恢复各自模型显示
 
 ### 4.5 消息流
@@ -183,7 +183,7 @@ app/page.tsx（客户端）
 
 **桌面端可调宽与收起（FR-14）**：
 - 边栏右缘有拖拽手柄（垂直细条，`cursor-col-resize`，`hidden md:block`）：按住拖动实时调整宽度，范围 200~480px（拖动中经 mousemove 即时生效，松手写回设置）
-- **拖到底即收起**：拖动中宽度到达最小阈值（200px）时立即收起（`sidebarCollapsed=true`，无需松手），并解除拖动监听；收起后宽度保留当前值，展开恢复该宽度
+- **拖到底即收起**：拖动中宽度到达最小阈值（200px）时立即收起（`sidebarCollapsed=true`，无需松手）；**但拖拽监听保持挂载**——若用户未松开鼠标往回拖（向右越过阈值），边栏重新展开（`sidebarCollapsed=false`）并继续跟随鼠标调整宽度；只有松手（mouseup）才结束拖拽。收起后宽度保留当前值，展开恢复该宽度（拖拽回拉场景下宽度继续跟随鼠标）
 - 收起入口：拖拽手柄上方提供「收起」按钮（ChevronsLeft 图标）；收起后边栏完全隐藏（`-translate-x-full`），顶栏左侧出现汉堡按钮点击展开
 - 宽度（`sidebarWidth`）与收起状态（`sidebarCollapsed`）持久化于设置（localStorage，经 useSettingsStore），刷新后恢复
 - 移动端抽屉宽度沿用 260px 并限制 `max-w-[85vw]`，不受桌面宽度设置影响
@@ -209,7 +209,7 @@ app/page.tsx（客户端）
 | 无会话 | 边栏显示空态文案「暂无会话」 |
 | 生成中 | 消息流内联流式渲染 + 光标动画；输入区禁用 |
 | 流中失败 | 已生成内容保留，底部错误条（红/橙）：「生成失败：{message}」+ 重试按钮 |
-| 模型不支持 | 输入区上方提示条（琥珀色）：「DeepSeek-V4 Pro 暂不支持 Responses API…」 |
+| 模型不支持 | 输入区上方提示条（琥珀色）：「该模型暂不支持 Responses API，请切换为其他模型」（正常状态下 Flash/Pro 均可用） |
 
 ## 6. 可访问性（NFR-7）
 

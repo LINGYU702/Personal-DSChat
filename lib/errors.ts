@@ -6,7 +6,7 @@ import type { ErrorCodeName } from "@/lib/types";
  */
 export const ERROR_MESSAGES: Record<ErrorCodeName, string> = {
   missing_api_key: "请先在设置中配置 API Key",
-  model_not_supported: "该模型暂不支持 Responses API，请先使用 Flash 模型",
+  model_not_supported: "该模型暂不支持 Responses API，请切换为其他模型",
   invalid_api_key: "API Key 无效，请检查设置中的 Key",
   insufficient_balance: "账户余额不足，请前往 DeepSeek 平台充值",
   rate_limited: "请求过于频繁，请稍后重试",

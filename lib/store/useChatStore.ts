@@ -32,9 +32,10 @@ import { estimateTokens } from "@/lib/utils/token-estimate";
 import { raf } from "@/lib/utils/rAF";
 import { uuid } from "@/lib/utils";
 
-/** 模型不支持时的固定文案（UI 错误条据此判断琥珀色样式） */
+/** 模型不支持时的固定文案（UI 错误条据此判断琥珀色样式；当前 Flash/Pro 均已支持，
+ *  仅未来新增的未启用模型会触发） */
 export const MODEL_NOT_SUPPORTED_MSG =
-  "DeepSeek-V4 Pro 暂不支持 Responses API，请先在顶部切换为 Flash 模型";
+  "所选模型暂不支持 Responses API，请先在顶部切换为其他模型";
 
 // ============================================================
 // 对话分支（FR-12）：消息树 + 当前路径

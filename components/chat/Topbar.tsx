@@ -88,11 +88,6 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
             {Object.values(MODELS).map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 {m.label}
-                {m.id === "deepseek-v4-pro" && (
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    （即将支持）
-                  </span>
-                )}
               </SelectItem>
             ))}
           </SelectContent>
