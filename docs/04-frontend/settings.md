@@ -43,9 +43,10 @@ persist 的 localStorage 恢复是**异步**的（首帧绘制后的微任务才
 - 保存后 toast「设置已保存」
 - API Key 校验：非空即保存（不做离线校验）；真实校验发生在首次请求（401 → 错误提示引导回设置）
 
-### 2.1 System Prompt 库管理（设置内）
+### 2.1 System Prompt 库管理（独立弹窗）
 
-- 「默认 System Prompt」行旁「管理库…」打开库管理面板（prompt-library.md 第 4.3 节）：新建/编辑/删除自定义条目、设为默认；内置条目不可编辑/删除
+- 「默认 System Prompt」行旁「管理 System Prompt 库…」按钮打开**独立库管理弹窗**（`PromptLibraryDialog`，不再是设置内嵌面板，见 prompt-library.md 第 4.3 节）
+- 弹窗双栏：左栏卡片列表 + 右栏编辑器；新建/重命名/编辑/删除自定义条目、设为默认；内置条目不可编辑/删除
 - 删除当前默认条目 → `defaultSystemPromptId` 自动回退 `"builtin-default"`
 - 旧版全局「自定义指令」`settings.systemPrompt` 内容：升级时自动导入为库条目「我的自定义指令」并设为默认（一次性迁移，见 session-storage.md 第 4 节）
 
@@ -84,7 +85,7 @@ export const clearApiKey = () => localStorage.removeItem(KEY_API);
 ## 5. 实现要点 Checklist
 
 - [ ] SettingsDialog 组件（Radix Dialog + shadcn Form 风格）
-- [ ] PromptManager 面板（库 CRUD + 设为默认，prompt-library.md 第 4.3 节）
+- [ ] PromptLibraryDialog 独立弹窗（左卡片列表 + 右编辑器，库 CRUD + 设为默认，prompt-library.md 第 4.3 节）
 - [ ] useSettingsStore（persist 中间件，`partialize` 排除 apiKey 或单独字段）
 - [ ] layout `<head>` 内联脚本首帧前应用持久化主题（第 1.1 节）；page 不重复设置 class
 - [ ] apiKey 独立存取函数 + 发送前校验逻辑

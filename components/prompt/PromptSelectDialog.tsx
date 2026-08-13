@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useChatStore } from "@/lib/store/useChatStore";
 import { usePromptStore } from "@/lib/store/usePromptStore";
-import { openSettings } from "@/lib/store/ui";
+import { openPromptLibrary } from "@/lib/store/ui";
 import { cn } from "@/lib/utils";
 
 /**
@@ -87,7 +87,7 @@ export function PromptSelectDialog({
           type="button"
           onClick={() => {
             onOpenChange(false);
-            openSettings();
+            openPromptLibrary();
           }}
           className="mt-1 w-full rounded-xl border border-dashed border-border px-3 py-2 text-center text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >

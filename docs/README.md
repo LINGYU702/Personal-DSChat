@@ -19,7 +19,7 @@
 
 | 决策项 | 结论 | 理由 |
 |---|---|---|
-| 技术栈 | **Next.js 15（App Router）+ React 19 + TypeScript + Tailwind CSS** | 单仓库全栈，Route Handler 天然支持 SSE 流式代理，生态成熟 |
+| 技术栈 | **Next.js 16（App Router）+ React 19 + TypeScript + Tailwind CSS** | 单仓库全栈，Route Handler 天然支持 SSE 流式代理，生态成熟 |
 | UI 组件 | **shadcn/ui**（基于 Tailwind 与 Radix） | 可直接借用的高质量无头组件 |
 | API 客户端 | **openai npm SDK**（官方，支持 Responses API） | 官方维护，`client.responses.create()` 一行调用 |
 | Markdown 渲染 | **react-markdown + remark-gfm + rehype-highlight（或 shiki）+ KaTeX** | 成熟组合，支持 GFM 表格、代码高亮、公式 |
@@ -70,6 +70,7 @@ docs/
 │   └── security.md                # API Key 安全边界、日志与速率限制
 ├── 06-storage/
 │   └── session-storage.md         # 会话/消息持久化（IndexedDB）与设置存储（localStorage）
+│                                  # 备份（FR-15）与单会话导出/导入格式（FR-16）
 └── 07-implementation/
     ├── implementation-order.md    # 分阶段实现顺序（每阶段的验收标准）
     └── testing.md                 # 手工测试清单与自动化测试方案
@@ -81,10 +82,10 @@ docs/
 
 | 模块 | 关键产出 |
 |---|---|
-| 01-requirements | 15 项功能需求 + 7 项非功能需求，每条带验收标准 |
+| 01-requirements | 16 项功能需求（FR-1 ~ FR-16）+ 7 项非功能需求，每条带验收标准 |
 | 02-architecture | 三层结构（前端 → 代理 → DeepSeek）、SSE 数据流图、TypeScript 依赖清单 |
 | 03-api-integration | 完整请求体构造规则、事件表、思考/联网/缓存的参数映射与边界 |
 | 04-frontend | 组件树、zustand store 结构、流式 UI 更新协议、设置页表单、System Prompt 库（FR-11） |
 | 05-backend | Route Handler 完整实现思路、超时/取消/错误透传 |
-| 06-storage | IndexedDB schema 与迁移策略、localStorage 设置 schema |
+| 06-storage | IndexedDB schema 与迁移策略、localStorage 设置 schema、备份与单会话导出/导入文件格式（FR-15/FR-16） |
 | 07-implementation | 8 个实现阶段 + 每阶段验收清单、端到端手工测试清单 |

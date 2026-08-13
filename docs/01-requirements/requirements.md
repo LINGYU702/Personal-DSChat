@@ -171,6 +171,29 @@
 - [ ] 同 id 会话/条目被跳过且本地数据不被覆盖；导入完成后提示「导入 N、跳过 M」
 - [ ] 导入期间若正在流式生成，先停止生成再导入；导入不导入设置项与 API Key
 
+### FR-16 单会话导出/导入（本应用 JSON / OpenAI Responses 格式 / Markdown）
+
+**描述**：支持将**单个会话**从侧边栏会话项导出为三种文件之一：
+
+1. **本应用单会话 JSON**：完整会话对象（含分支树、usage、System Prompt 快照），可重新导入本应用恢复/合并（同 id 跳过）；
+2. **OpenAI Responses 格式会话**：以 Responses API `input` items 为主体的 JSON 文件（format 标识 `openai-responses-session`），与上游请求的 input 结构一致，可被 OpenAI 兼容工具直接使用/回放；
+3. **Markdown**：人类可读的对话记录（标题、模型、System Prompt、逐条消息、思考过程）。
+
+同时支持导入：**本应用单会话 JSON**（同 id 跳过保留本地）与 **OpenAI Responses 格式会话**（总是创建为新会话）。Markdown 文件不支持导入（纯展示格式）。
+
+**验收标准**：
+- [ ] 侧边栏每个会话项 hover 显示「导出」按钮，点击弹出格式菜单（本应用 JSON / OpenAI Responses 格式 / Markdown），选择后浏览器下载对应文件
+- [ ] 本应用单会话 JSON 结构：`{ format: "deepseek-chat-session", version: 1, exportedAt, session: Session }`；文件名 `deepseek-chat-session-YYYYMMDD-HHmmss.json`
+- [ ] OpenAI Responses 格式结构：`{ format: "openai-responses-session", version: 1, title, model, instructions?, items: InputItem[] }`；`items` 与 `lib/api/build-input.ts` 的输出一致（message / reasoning / web_search_call，含历史 web_search_call 原 id 回传）；文件名 `<标题>-responses-session.json`（标题经文件名字符净化）
+- [ ] Markdown 导出：文件名 `<标题>-YYYYMMDD-HHmmss.md`，内容含一级标题（会话标题）、元信息行（模型/导出时间）、System Prompt 块、按顺序的「用户 / DeepSeek（思考 + 正文）」段落；导出当前活动路径（分支会话导出当前路径消息）
+- [ ] 导出不包含 API Key、设置项；token 用量明细仅本应用 JSON 含（OpenAI Responses 与 Markdown 格式不含 usage）
+- [ ] 用户菜单「导入对话…」：选择 JSON 文件后自动识别格式（本应用单会话 / OpenAI Responses 会话 / 全量备份），先展示确认对话框（格式类型、标题、消息数、冲突处理说明），确认后导入
+- [ ] 本应用单会话 JSON 导入：本地已存在同 id 会话 → 跳过保留本地并提示；否则写入后出现在边栏
+- [ ] OpenAI Responses 格式导入：总是创建**新会话**（新 id，标题取文件 title，缺省为「导入的对话」）；items 重建消息链：`message` → 对应 user/assistant 消息、`reasoning` 附加到其后第一条 assistant 消息、`web_search_call` 附加为搜索状态（completed）；无法识别的 item 类型跳过
+- [ ] 导入的是全量备份文件（`deepseek-chat-backup`）时给出明确提示「请使用「导入数据」导入备份文件」，不写入任何数据
+- [ ] 非法 JSON / format / version 不符 → 明确错误提示，不写入任何数据
+- [ ] 流式生成中禁止导出当前流式会话（按钮禁用）；导入前先停止生成
+
 ## 2. 非功能需求
 
 | 编号 | 类别 | 要求 |

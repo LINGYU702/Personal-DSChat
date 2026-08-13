@@ -33,6 +33,14 @@ export function backupFilename(date = new Date()): string {
   return `deepseek-chat-backup-${ymd}-${hms}.json`;
 }
 
+/** 时间戳片段 YYYYMMDD-HHmmss（backupFilename 与单会话文件名共用，FR-16） */
+export function timestampPart(date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ymd = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+  const hms = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  return `${ymd}-${hms}`;
+}
+
 /** 导出：构建备份对象（内置 prompt 排除在外，FR-15） */
 export function buildBackup(
   sessions: Session[],
@@ -181,8 +189,8 @@ export async function importBackup(data: BackupData): Promise<ImportResult> {
   return result;
 }
 
-/** 会话 id 是否已存在（导入冲突判定） */
-async function hasSession(id: string): Promise<boolean> {
+/** 会话 id 是否已存在（导入冲突判定；单会话导入复用，FR-16） */
+export async function hasSession(id: string): Promise<boolean> {
   const list = await getAllSessions();
   return list.some((s) => s.id === id);
 }

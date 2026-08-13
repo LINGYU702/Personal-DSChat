@@ -95,20 +95,41 @@ interface Session {
 - **点击胶囊**在浏览器中央弹出对话框（Dialog，跟随当前深浅主题）展示 System Prompt 全文，内容区可滚动（`max-h-[60vh] overflow-y-auto`，长文不撑破视口）
 - 欢迎视图中的选择卡片在锁定后消失（该视图只存在于空会话）
 
-### 4.3 库管理（设置对话框内）
+### 4.3 库管理（独立弹窗，双栏布局）
 
-位置：设置对话框新增「System Prompt 库」区块（列表 + 操作）：
+库管理为**独立弹窗**（`PromptLibraryDialog`，独立于设置对话框；设置对话框与库选择弹窗均提供打开入口），
+**左侧 System Prompt 卡片列表 + 右侧文本编辑器**双栏布局：
+
+**布局**：
+- 居中弹窗，宽度 ≈ 视口 88%（上限 1080px，接近浏览器页面比例）：`sm:max-w-[min(88vw,1080px)]`
+  （注意：必须用 `sm:max-w-*` 覆盖 shadcn DialogContent 默认的 `sm:max-w-lg`（512px），
+  否则大屏下弹窗会被收窄到 512px；移动端回退为接近全宽）；内容区高约 `min(78vh,760px)`
+- 左栏（默认宽 256px，可滚动）：条目卡片列表 + 底部「新建 System Prompt」按钮
+- **左栏右缘为可拖拽分隔线**：`cursor-col-resize`，拖动实时调整左栏宽度，范围 200~420px；
+  拖拽状态为会话内状态（不持久化），每次打开弹窗恢复默认 256px
+- 右栏（flex-1）：编辑器（标题 + 名称输入 + 内容 textarea + 保存按钮）
+
+**左栏卡片**：
+- 内置条目恒置顶（「内置」徽标）；自定义条目按 `updatedAt` 倒序
+- 当前默认项显示实心星标；hover 显示操作按钮：编辑（铅笔）、删除（垃圾桶，仅自定义）、设为默认（星标，非默认项）
+- 点击卡片 → 选中（高亮边框）+ 右栏加载该条目到编辑器；切换卡片/关闭弹窗**丢弃未保存草稿**（以 store 为准重新加载）
+
+**右栏编辑器**：
+- 名称（必填，≤50 字）+ 内容（必填，textarea 多行，≤8000 字）
+- **内置条目**：输入禁用 + 提示「内置条目不可编辑」，无保存按钮
+- 自定义条目/新建：保存按钮（名称与内容均非空才可用）；保存成功列表即时更新，按钮短暂显示「已保存」
+- 新建：左栏底部按钮 → 右栏清空表单（名称/内容空，聚焦名称输入）→ 保存后自动选中新条目
 
 | 操作 | 行为 |
 |---|---|
-| 新建 | 表单：名称（必填，≤50 字）+ 内容（必填，textarea 多行）+ 保存 |
-| 编辑 | 同新建表单，预填；**内置条目不显示编辑/删除** |
-| 删除 | 二次确认；内置条目禁止删除（按钮禁用） |
-| 设为默认 | 设置 `settings.defaultSystemPromptId`；当前默认项显示「默认」徽标 |
+| 创建 | 左栏底部「新建 System Prompt」→ 右栏空表单 → 保存（`createPrompt`） |
+| 重命名 | 选中卡片 → 右栏修改名称 → 保存（与编辑同操作，`updatePrompt`） |
+| 编辑 | 选中卡片 → 右栏修改名称/内容 → 保存 |
+| 删除 | 卡片 hover 删除按钮 → `window.confirm` 二次确认 → 删除；删除当前选中项后回退选中内置条目；删除默认项自动回退 `defaultSystemPromptId` 为内置（store 已处理） |
+| 设为默认 | 卡片星标按钮 → `setDefaultSystemPromptId`（内置条目亦可设为默认） |
 
-- 列表按 `updatedAt` 倒序；内置条目恒置顶
 - 名称冲突：允许重名（id 区分），不强制唯一
-- 内容长度上限：建议 8000 字符（UI 校验 + 提示）
+- 弹窗开关状态在 `lib/store/ui.ts`（`openPromptLibrary` / `closePromptLibrary`），设置对话框与库选择弹窗两入口共用；打开时确保 `loadPrompts`（幂等）已执行
 
 ## 5. 与既有「自定义指令」的关系（迁移）
 
@@ -138,6 +159,6 @@ interface Session {
 - [ ] `lib/types.ts`：SystemPrompt 类型 + Session 扩展字段
 - [ ] `lib/prompts/builtin.ts`：BUILTIN_DEFAULT_PROMPT 常量
 - [ ] `lib/storage/db.ts`：新增 `prompts` object store（见 session-storage.md）
-- [ ] 前端：PromptSelectDialog（库选择）、PromptManager（库管理 CRUD + 设为默认）、PromptBadge（锁定只读标识）
+- [ ] 前端：PromptSelectDialog（库选择）、PromptLibraryDialog（库管理独立弹窗：左卡片列表 + 右编辑器）、PromptBadge（锁定只读标识）
 - [ ] chat-state.md：sendMessage 冻结步骤 + 快照写入
 - [ ] 单测：锁定规则（首条 user 消息 → 快照冻结）、删除/编辑条目的快照隔离、默认值回退

@@ -111,6 +111,34 @@ export interface BackupData {
   prompts: SystemPrompt[]; // 用户自定义 System Prompt（内置条目不导出）
 }
 
+// ---------- 单会话导出/导入（FR-16，session-storage.md 8.3） ----------
+
+/** 本应用单会话 JSON 格式标识 */
+export const SESSION_FORMAT = "deepseek-chat-session";
+export const SESSION_VERSION = 1;
+
+export interface SessionBackupData {
+  format: typeof SESSION_FORMAT;
+  version: number; // 当前固定为 1
+  exportedAt: number; // 导出时间戳
+  session: Session; // 完整会话对象（含分支树、usage、System Prompt 快照）
+}
+
+/** OpenAI Responses 格式会话文件标识（items 与 Responses API input 结构一致） */
+export const RESPONSES_SESSION_FORMAT = "openai-responses-session";
+export const RESPONSES_SESSION_VERSION = 1;
+
+export interface ResponsesSessionFile {
+  format: typeof RESPONSES_SESSION_FORMAT;
+  version: number;
+  title: string; // 会话标题
+  model: ModelId; // 会话模型
+  instructions?: string; // System Prompt 内容快照（可省略）
+  createdAt?: number; // 会话创建时间（可省略）
+  exportedAt: number;
+  items: InputItem[]; // 与 Responses API input 参数结构一致（可直接回放）
+}
+
 // ---------- 请求契约（前端 → 后端代理 → DeepSeek） ----------
 
 export type InputItem =

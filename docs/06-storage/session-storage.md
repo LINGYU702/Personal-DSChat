@@ -192,3 +192,107 @@ export interface BackupData {
 4. 写库完成后重载会话 store（若流式中先 stopStreaming），并提示「导入 N、跳过 M」。
 
 > 导入是「合并」而非「覆盖」语义：两台设备各自导出再互相导入可无损合并；导入不导入设置与 API Key。
+
+### 8.3 单会话导出/导入（FR-16）
+
+> 入口：侧边栏会话项 hover「导出」菜单（三种格式）+ 用户菜单「导入对话…」（识别格式导入）；
+> 核心逻辑在 `lib/storage/session-io.ts`（纯函数可单测，复用 export-import.ts 的 `timestampPart`/`hasSession`/`isValidSession`），UI 见 ui-design.md 4.7/4.8。
+
+#### 8.3.1 格式 A：本应用单会话 JSON
+
+```ts
+// lib/types.ts
+export const SESSION_FORMAT = "deepseek-chat-session";
+export const SESSION_VERSION = 1;
+
+export interface SessionBackupData {
+  format: typeof SESSION_FORMAT;
+  version: number;      // 当前固定为 1
+  exportedAt: number;   // 导出时间戳
+  session: Session;     // 完整会话对象（含分支树、usage、System Prompt 快照）
+}
+```
+
+- 文件名：`deepseek-chat-session-YYYYMMDD-HHmmss.json`（复用 `backupFilename` 的时间戳规则）
+- 导出内容为 Session 全量对象（含思维链/用量/分支），明文 JSON，本地下载；**不导出** API Key、设置项
+- 导入语义与 FR-15 一致：**同 id 会话跳过、保留本地**（不覆盖），写库复用 `putSession`，完成后重载会话 store
+
+#### 8.3.2 格式 B：OpenAI Responses 格式会话
+
+以 Responses API `input` 参数为主体的 JSON 文件，`items` 结构与上游请求完全一致，可被 OpenAI 兼容工具直接回放。
+
+```ts
+// lib/types.ts
+export const RESPONSES_SESSION_FORMAT = "openai-responses-session";
+export const RESPONSES_SESSION_VERSION = 1;
+
+export interface ResponsesSessionFile {
+  format: typeof RESPONSES_SESSION_FORMAT;
+  version: number;
+  title: string;          // 会话标题
+  model: ModelId;         // 会话模型
+  instructions?: string;  // System Prompt 内容快照（可省略）
+  createdAt?: number;     // 会话创建时间（可省略）
+  exportedAt: number;
+  items: InputItem[];     // 与 Responses API input 参数结构一致（lib/types.ts InputItem）
+}
+```
+
+- 导出：`buildResponsesSessionFile(session)` 内部用 `buildInput(getPathMessages(session))` 生成 items ——
+  与真实请求的 input 序列一致：user/assistant message items、带工具轮的 `reasoning` item（id = 消息 id）、
+  `web_search_call` item（原 call id 回传）；**导出当前活动路径**（分支会话不含未激活分支）
+- 文件名：`<净化标题>-responses-session.json`（`sanitizeFilename`：非法文件名字符替换为 `_`，截断 60 字符）
+- 导入（**总是创建新会话**，无冲突语义）：
+  1. 遍历 `items` 重建线性消息链（无分支结构）：
+     - `{type:"message", role:"user"|"assistant"}` → 对应 StoredMessage（status: "completed"，无 usage）
+     - `{type:"reasoning", content}` → 附加到其后第一条 assistant 消息的 `reasoning` 字段
+     - `{type:"web_search_call", id}` → 附加到其后第一条 assistant 消息的 `webSearch={callId:id, status:"completed"}` 与 `hadToolCall=true`
+     - 其他 item 类型（function_call 等预留类型）跳过
+  2. 新会话字段：id=uuid；title=文件 title（缺省「导入的对话」）；model=文件 model（非法/未启用 → 当前默认模型）；
+     systemPromptText=文件 instructions（缺省内置基础 Prompt 内容）；systemPromptId="builtin-default"；
+     createdAt/updatedAt=now；消息按序补 parentId 链；activeLeafId=最后一条消息 id
+
+#### 8.3.3 格式 C：Markdown
+
+- 文件名：`<净化标题>-YYYYMMDD-HHmmss.md`
+- 结构（`sessionToMarkdown(session)`）：
+
+```markdown
+# {会话标题}
+
+- 模型：{模型显示名}
+- 导出时间：{YYYY-MM-DD HH:mm:ss}
+
+## System Prompt（{已锁定 / 未开始}）
+
+{systemPromptText}
+
+---
+
+## 用户
+
+{消息正文}
+
+## DeepSeek
+
+> 深度思考
+
+{思维链全文}
+
+{回答正文}
+```
+
+- 按当前活动路径顺序输出：user 消息 → `## 用户`；assistant 消息 → `## DeepSeek`（思考引用块 + 正文）；
+  轮次之间 `---` 分隔；无思考/无正文的段落省略；分支会话导出当前路径
+- 纯展示格式，**不支持导入**
+
+#### 8.3.4 格式识别与导入分流（用户菜单「导入对话…」）
+
+- `detectSessionFormat(json)` 按顶层 `format` 字段识别：`"backup" | "session" | "responses" | null`
+- 识别结果分流：
+  - `backup`（全量备份）→ 提示「请使用『导入数据』导入备份文件」，不写入任何数据
+  - `session`（本应用单会话）→ 确认对话框（标题/消息数/同 id 跳过说明）→ 写库（同 id 跳过）
+  - `responses`（OpenAI Responses 会话）→ 确认对话框（标题/消息数/创建新会话说明）→ 重建为新会话写库
+  - 无法识别 / 非法 JSON / version 不符 → 明确错误提示，不写入任何数据
+- 导入完成后重载会话 store（若流式中先 stopStreaming），toast 提示导入结果
+

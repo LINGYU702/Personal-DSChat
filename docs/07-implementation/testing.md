@@ -25,8 +25,9 @@
 | `settings.ts` | ① 默认值合并；② JSON 损坏回退默认；③ apiKey 独立读写；④ defaultSystemPromptId 指向不存在条目时回退内置；⑤ 旧自定义指令一次性迁移 |
 | `db.ts`（fake-indexeddb） | ① put/getAll 倒序；② delete；③ 版本升级不破坏数据；④ prompts store CRUD；⑤ v1→v2 升级保留 sessions |
 | `export-import.ts`（FR-15） | ① serializeBackup → parseBackup roundtrip 数据一致；② 非法 JSON / format 不符 / version 不支持 → 明确报错；③ 正常导入写库（会话 + 自定义 prompt）；④ 同 id 冲突跳过保留本地；⑤ 内置 prompt（isBuiltin）不导入；⑥ 畸形条目跳过并计数；⑦ 导出不含内置条目 |
+| `session-io.ts`（FR-16，单会话） | ① serializeSessionBackup → parseSessionBackup roundtrip；② 非法 JSON / format / version 不符 → 明确报错；③ buildResponsesSessionFile：items 与 buildInput 一致（含 reasoning / web_search_call 回传）；④ parseResponsesSessionFile 校验；⑤ responsesSessionToSession：message/reasoning/web_search_call 重建消息链（reasoning 与 webSearch 归属其后 assistant）；⑥ responsesSessionToSession：title 缺省「导入的对话」、model 非法回退默认；⑦ sessionToMarkdown 结构（标题/元信息/System Prompt/用户/DeepSeek 段落）；⑧ sanitizeFilename 净化非法字符并截断；⑨ detectSessionFormat 识别 backup/session/responses/null 四类；⑩ 本应用单会话导入同 id 跳过 |
 | `prompt-library` 逻辑 | ① 锁定规则：空会话可更换、已有 user 消息后 selectSystemPrompt 为 no-op；② 快照隔离：删除/修改库条目不影响已锁定会话的 systemPromptText；③ usePromptStore 加载 = 内置 + 自定义合并 |
-| 组件 | ① CodeBlock 复制按钮（clipboard mock）；② 表格渲染；③ 思考面板折叠/展开；④ 用量行命中率计算；⑤ PromptSelectDialog 选择生效；⑥ PromptBadge 锁定后无「更换」入口；⑦ PromptManager 内置条目禁编辑/删除 |
+| 组件 | ① CodeBlock 复制按钮（clipboard mock）；② 表格渲染；③ 思考面板折叠/展开；④ 用量行命中率计算；⑤ PromptSelectDialog 选择生效；⑥ PromptBadge 锁定后无「更换」入口；⑦ PromptLibraryDialog 内置条目禁编辑/删除、默认项星标、删除确认、新建/重命名/编辑保存后列表更新 |
 
 ## 3. 后端 curl 冒烟
 
@@ -110,6 +111,17 @@ curl -N -s -X POST http://localhost:3000/api/chat \
 - [ ] FR-15 重复导入同一文件 → 提示「导入 0、跳过 N」，本地数据不被覆盖
 - [ ] FR-15 导入非本应用 JSON（或损坏文件）→ 明确错误提示，不写入任何数据
 - [ ] FR-15 生成中导入 → 先停止生成再导入，界面不崩溃
+
+### 4.9 单会话导出/导入（FR-16）
+- [ ] 会话项 hover 出现「导出」按钮 → 弹出三格式菜单；分别下载：`deepseek-chat-session-*.json`、`*-responses-session.json`、`*.md`
+- [ ] Responses 格式文件：`format: "openai-responses-session"`；items 含 message/reasoning/web_search_call（联网轮次）；可被任何 OpenAI 兼容客户端作为 input 直接发送
+- [ ] Markdown 文件：标题/模型/导出时间/System Prompt/逐条消息正确；含深度思考内容；分支会话导出当前路径
+- [ ] 流式生成中：当前流式会话导出按钮禁用，其他会话可导出
+- [ ] 用户菜单「导入对话…」导入本应用单会话 JSON → 确认框（标题/消息数）→ 会话出现在边栏可查看；再次导入同文件 → 「跳过」提示，本地不被覆盖
+- [ ] 导入 Responses 格式文件 → 确认框（将创建新会话）→ 新会话出现；消息/思考/联网状态还原正确；刷新后仍在
+- [ ] 导入全量备份文件 → 提示「请使用『导入数据』导入备份文件」，不写入任何数据
+- [ ] 导入非法 JSON / 其他格式文件 → 明确错误提示，不写入任何数据
+- [ ] 生成中导入 → 先停止生成再导入，界面不崩溃
 
 ## 5. 缓存命中专项验证
 

@@ -61,11 +61,14 @@ app/page.tsx（客户端）
     │       ├── <WebSearchToggle />         // 联网搜索开关
     │       ├── <ContextSizeLabel />        // 发送按钮左侧：上下文大小（悬浮显示上一轮用量）
     │       └── <SendButton /> / <StopButton />
-    └── <SettingsDialog>（Modal）
-        ├── 设置表单（见 settings.md）
-        └── <PromptManager />          // System Prompt 库管理（CRUD + 设为默认，见 prompt-library.md）
+    └── <SettingsDialog>（Modal）    // 设置表单（见 settings.md）；「管理 System Prompt 库…」按钮打开独立弹窗
 
-附：新会话选择器 <PromptSelectDialog>（欢迎视图卡片/顶栏入口弹出，见 prompt-library.md 第 4.1 节）
+独立弹窗：
+├── <PromptLibraryDialog>（Modal，860px 双栏）// System Prompt 库管理（见 prompt-library.md 第 4.3 节）
+│   ├── 左栏 <PromptCardList />       // 条目卡片（内置置顶 + 默认星标 + hover 编辑/删除/设默认）
+│   │   └── 「新建 System Prompt」按钮
+│   └── 右栏 <PromptEditor />         // 名称输入 + 内容 textarea + 保存（内置只读）
+└── <PromptSelectDialog>（新会话选择器）// 欢迎视图卡片/顶栏入口弹出（见 prompt-library.md 第 4.1 节）
 ```
 
 ## 3. 视觉规范
@@ -177,7 +180,12 @@ app/page.tsx（客户端）
 
 ### 4.7 边栏
 
-- 会话项 hover 显示「删除」按钮（确认弹窗）；标题双击进入重命名（input 内联编辑，Enter 确认 / Esc 取消）
+- 会话项 hover 显示「导出」（Download 图标，FR-16）与「删除」（Trash 图标，确认弹窗）按钮；标题双击进入重命名（input 内联编辑，Enter 确认 / Esc 取消）
+- **会话导出菜单（FR-16）**：点击会话项导出按钮弹出 DropdownMenu（side 朝右），三项：
+  - 「导出为 JSON」→ 下载 `deepseek-chat-session-YYYYMMDD-HHmmss.json`（本应用单会话格式，见 session-storage.md 8.3.1）
+  - 「导出为 Responses 格式」→ 下载 `<净化标题>-responses-session.json`（OpenAI Responses 格式，8.3.2）
+  - 「导出为 Markdown」→ 下载 `<净化标题>-YYYYMMDD-HHmmss.md`（8.3.3）
+  - 流式生成中的会话禁用导出（按钮 disabled + title 说明）
 - 会话搜索：按标题模糊过滤
 - 移动端（<768px）：边栏为抽屉，顶栏汉堡按钮开合，遮罩点击关闭
 
@@ -191,7 +199,13 @@ app/page.tsx（客户端）
 
 ### 4.8 设置入口
 
-- 边栏底部用户菜单（圆形头像占位「D」）→ 下拉：设置 / 切换深色模式 / 导出数据 / 导入数据
+- 边栏底部用户菜单（圆形头像占位「D」）→ 下拉：设置 / 切换深色模式 / 导出数据 / 导入数据 / 导入对话…
+- **导入对话…（FR-16）**：隐藏 `input[type=file]`（accept `.json,application/json`）→ FileReader 读取 → `detectSessionFormat` 识别格式：
+  - 本应用单会话 JSON → 确认对话框（标题、消息数、同 id 将跳过说明）→ 写库（同 id 跳过保留本地）→ toast「已导入会话」（冲突时「跳过 M」）
+  - OpenAI Responses 格式 → 确认对话框（标题、消息数、将创建新会话说明）→ 重建为新会话 → toast「已导入为「{标题}」」
+  - 全量备份文件（deepseek-chat-backup）→ 明确提示「请使用『导入数据』导入备份文件」，不写入任何数据
+  - 非法 JSON / 无法识别格式 / version 不符 → 明确错误提示
+  - 导入前若正在流式生成先停止生成；完成后重载会话 store
 - 导出数据：将全部会话 + 自定义 System Prompt 库序列化为 JSON（见 session-storage.md 第 8 节），触发浏览器下载，完成后底部 toast「已导出 N 个会话」
 - 导入数据：隐藏 `input[type=file]`（accept `.json,application/json`）→ FileReader 解析 → 先弹确认对话框（显示将导入的会话/库条目数，说明同 id 冲突项将跳过）→ 确认后写库 → 重载会话 store → toast「导入 N、跳过 M」；格式/版本不符给出明确错误，不写入任何数据
 - 设置对话框：居中 Modal（宽 480px），表单见 settings.md

@@ -22,7 +22,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { MODELS } from "@/lib/deepseek/models";
-import { PromptManager } from "@/components/prompt/PromptManager";
+import { PromptLibraryDialog } from "@/components/prompt/PromptLibraryDialog";
 import {
   getApiKey,
   setApiKey,
@@ -30,7 +30,7 @@ import {
 } from "@/lib/store/useSettingsStore";
 import { usePromptStore } from "@/lib/store/usePromptStore";
 import { clearAllLocalData } from "@/lib/storage/settings";
-import { closeSettings, useUiStore } from "@/lib/store/ui";
+import { closeSettings, openPromptLibrary, useUiStore } from "@/lib/store/ui";
 import {
   BUILTIN_PROMPT_ID,
   type ModelId,
@@ -62,7 +62,6 @@ export function SettingsDialog() {
   const [defaultSystemPromptId, setDefaultSystemPromptId] = React.useState(
     BUILTIN_PROMPT_ID
   );
-  const [managePrompts, setManagePrompts] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
   const saveTimerRef = React.useRef<number | null>(null);
   const prompts = usePromptStore((s) => s.prompts);
@@ -80,7 +79,6 @@ export function SettingsDialog() {
       setTemperature(st.temperature);
       setDarkMode(st.darkMode);
       setDefaultSystemPromptId(st.defaultSystemPromptId);
-      setManagePrompts(false);
       setSaved(false);
     }
     return () => {
@@ -283,16 +281,11 @@ export function SettingsDialog() {
               </div>
               <button
                 type="button"
-                onClick={() => setManagePrompts((v) => !v)}
+                onClick={openPromptLibrary}
                 className="text-xs text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
               >
-                {managePrompts ? "收起库管理" : "管理 System Prompt 库…"}
+                管理 System Prompt 库…
               </button>
-              {managePrompts && (
-                <div className="pt-1">
-                  <PromptManager />
-                </div>
-              )}
             </div>
 
             {/* 深色模式 */}
@@ -340,6 +333,10 @@ export function SettingsDialog() {
           设置已保存
         </div>
       )}
+
+      {/* System Prompt 库管理独立弹窗（prompt-library.md 4.3；挂载在设置对话框之后，
+          叠加打开时位于上层） */}
+      <PromptLibraryDialog />
     </>
   );
 }

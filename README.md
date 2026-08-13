@@ -18,6 +18,7 @@
 | 会话管理 | 多会话本地持久化（IndexedDB）、重命名、搜索、深色模式 |
 | 侧边栏 | 桌面端可拖拽调整宽度（200~480px）并可完全收起，宽度/收起状态持久化（FR-14） |
 | 数据备份 | 全部会话 + System Prompt 库一键导出为 JSON 备份文件，可导入恢复/合并（同 id 冲突保留本地，FR-15） |
+| 单会话导出/导入 | 单个会话可导出为本应用 JSON / OpenAI Responses 格式 / Markdown 三种文件；可导入本应用 JSON 与 OpenAI Responses 格式会话（FR-16） |
 | 流式体验 | SSE 逐 token 渲染 + 帧级节流（长文本不卡顿，FR-13） |
 
 ## 快速开始（本地开发）
@@ -32,7 +33,7 @@ npm run dev        # http://localhost:3000
 其他命令：
 
 ```bash
-npm test           # 单元测试（vitest，48 用例）
+npm test           # 单元测试（vitest，75 用例）
 npm run build      # 生产构建（自托管模式，含后端代理）
 npm run start      # 启动生产服务器
 ```
@@ -87,7 +88,7 @@ npm run start     # 监听 3000 端口；或部署到 Vercel（Node runtime）
 
 ## 技术栈
 
-Next.js 15（App Router） · React 19 · TypeScript（strict） · Tailwind CSS 4 · shadcn/ui 风格组件（Radix）
+Next.js 16（App Router） · React 19 · TypeScript（strict） · Tailwind CSS 4 · shadcn/ui 风格组件（Radix）
 zustand（状态） · openai SDK（后端代理） · react-markdown + KaTeX + highlight.js（渲染）
 idb（IndexedDB） · vitest + fake-indexeddb（测试）
 
@@ -97,9 +98,11 @@ idb（IndexedDB） · vitest + fake-indexeddb（测试）
 npm test
 ```
 
-48 个用例覆盖：请求构造、input items 映射（含 web_search_call/reasoning 回传）、SSE 解析、
+75 个用例覆盖：请求构造、input items 映射（含 web_search_call/reasoning 回传）、SSE 解析、
 分支语义（编辑/重新生成/切换/迁移）、持久化链路（发送 → 刷新 → 恢复）、System Prompt 库、
 上下文截断与超限重试、流式帧节流与 Tooltip 回归等。
+
+单会话导出/导入（FR-16）用例见 `tests/session-io.test.ts`。
 
 ## 文档索引
 

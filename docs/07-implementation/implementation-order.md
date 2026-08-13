@@ -67,7 +67,7 @@
 - `lib/prompts/builtin.ts`：BUILTIN_DEFAULT_PROMPT 常量；`lib/types.ts` 加 SystemPrompt 类型
 - `lib/storage/db.ts`：prompts store（v1→v2）+ 旧版「自定义指令」一次性迁移（session-storage.md 第 4 节）
 - `usePromptStore`（chat-state.md）；Settings 加 `defaultSystemPromptId`（废弃 `systemPrompt`）
-- `PromptSelectDialog`（新会话选择器）、`PromptBadge`（锁定只读标识）、`PromptManager`（库 CRUD + 设为默认）
+- `PromptSelectDialog`（新会话选择器）、`PromptBadge`（锁定只读标识）、`PromptLibraryDialog`（库管理独立弹窗：左卡片列表 + 右编辑器，CRUD + 设为默认）
 - sendMessage 冻结步骤 0（快照写入与首条 user 消息原子完成）与锁定规则（prompt-library.md 第 3 节）
 
 **验收**：

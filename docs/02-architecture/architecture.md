@@ -53,34 +53,47 @@ api_chat/
 │   └── api/
 │       └── chat/route.ts          # POST /api/chat SSE 代理（唯一后端端点）
 ├── components/
-│   ├── sidebar/                   # Sidebar, NewChatButton, ConversationList, UserMenu
-│   ├── chat/                      # ChatView, MessageList, MessageItem, WelcomeView,
-│   │                              # ReasoningPanel, WebSearchStatus, Markdown, CodeBlock
-│   ├── input/                     # ChatInput, ThinkingToggle, WebSearchToggle, SendButton
-│   ├── settings/                  # SettingsDialog, ApiKeyField, ModelSelect, EffortSelect
+│   ├── sidebar/                   # Sidebar（会话列表/拖拽宽度/导出导入入口）
+│   ├── chat/                      # ChatShell, Topbar, WelcomeView, MessageList, MessageItem,
+│   │                              # ChatInput, ReasoningPanel, BranchSwitcher
+│   ├── settings/                  # SettingsDialog
+│   ├── prompt/                    # PromptBadge, PromptLibraryDialog, PromptSelectDialog（FR-11）
 │   └── ui/                        # shadcn/ui 组件（button, dialog, dropdown-menu,
-│                                  #   select, switch, tooltip, textarea, scroll-area）
+│                                  #   select, switch, tooltip, radio-group, scroll-area...）
 ├── lib/
 │   ├── types.ts                   # 全部共享类型（见 04-frontend/chat-state.md）
 │   ├── api/
-│   │   ├── client.ts              # 前端 fetch 封装（含 SSE 解析，见 streaming.md）
-│   │   └── build-request.ts       # 请求体构造（纯函数，可单测）
+│   │   ├── client.ts              # 前端 fetch 封装（代理/直连双模式 + SSE 解析）
+│   │   ├── build-request.ts       # 请求体构造（纯函数，可单测）
+│   │   ├── build-input.ts         # 会话历史 → input items 映射（纯函数，可单测）
+│   │   └── parse-sse.ts           # SSE 块解析（纯函数，可单测）
 │   ├── deepseek/
 │   │   ├── sdk.ts                 # 后端 openai SDK 客户端初始化
-│   │   ├── proxy.ts               # 代理转发核心（事件透传、超时、取消）
 │   │   └── models.ts              # MODEL_SUPPORT 开关表、模型常量
+│   ├── errors.ts                  # 错误码 → 文案映射（纯函数，可单测）
 │   ├── store/
-│   │   ├── useChatStore.ts        # zustand：会话/消息/流式状态
-│   │   └── useSettingsStore.ts    # zustand + localStorage 持久化：设置
+│   │   ├── useChatStore.ts        # zustand：会话/消息/流式状态（分支、rAF 节流）
+│   │   ├── useSettingsStore.ts    # zustand + localStorage 持久化：设置
+│   │   ├── usePromptStore.ts      # zustand：System Prompt 库（FR-11）
+│   │   └── ui.ts                  # 全局 UI 标志（设置对话框开关）
 │   ├── storage/
-│   │   ├── db.ts                  # IndexedDB 封装（idb）
-│   │   └── settings.ts            # localStorage 读写
+│   │   ├── db.ts                  # IndexedDB 封装（idb，v3）
+│   │   ├── settings.ts            # localStorage 读写 + 旧版自定义指令迁移
+│   │   ├── export-import.ts       # 全量备份（FR-15）纯函数 + 共用校验/时间戳
+│   │   └── session-io.ts          # 单会话导出/导入（FR-16）纯函数（JSON / Responses / Markdown）
 │   ├── markdown/
 │   │   └── render.tsx             # Markdown 渲染配置（react-markdown 等）
 │   ├── prompts/
 │   │   └── builtin.ts             # BUILTIN_DEFAULT_PROMPT 内置基础 System Prompt 常量（FR-11）
-│   └── utils.ts                   # 工具函数（token 估算、时间格式化等）
-└── types/ 或直接在 lib/types.ts 中
+│   └── utils/
+│       ├── utils.ts               # cn/uuid/时间与 token 格式化
+│       ├── token-estimate.ts      # 轻量 token 估算（纯函数）
+│       ├── truncate-history.ts    # 长对话截断（纯函数）
+│       └── rAF.ts                 # requestAnimationFrame 封装（Node 测试回退）
+├── scripts/
+│   └── build-pages.mjs            # GitHub Pages 静态导出构建脚本
+├── tests/                         # vitest 单元测试（含 fake-indexeddb）
+└── .github/workflows/             # deploy-pages.yml（GitHub Pages 自动部署）
 ```
 
 ## 4. 技术选型与依赖清单
@@ -89,7 +102,7 @@ api_chat/
 
 | 依赖 | 版本建议 | 用途 |
 |---|---|---|
-| `next` | 15.x | App Router、Route Handler |
+| `next` | 16.x | App Router、Route Handler |
 | `react` / `react-dom` | 19.x | UI |
 | `typescript` | 5.x | 类型安全（strict） |
 | `tailwindcss` + `postcss` + `autoprefixer` | 4.x | 样式（shadcn/ui 兼容 v4） |
@@ -105,7 +118,7 @@ api_chat/
 | `rehype-highlight` + `highlight.js`（CSS 主题） | 代码高亮（轻量）；如追求极致可换 `shiki`（见 markdown-rendering.md） |
 | `remark-math` + `rehype-katex` + `katex` | LaTeX 公式 |
 | `idb` | IndexedDB Promise 封装 |
-| `eventsource-parser`（可选） | SSE 解析（若不自写解析器） |
+| `eventsource-parser`（可选，未引入） | SSE 解析（实际采用自写 `parse-sse.ts`，~25 行） |
 
 ### 明确不引入
 
