@@ -7,13 +7,9 @@ import {
   Download,
   FileJson,
   FileText,
-  Moon,
   Plus,
   Search,
-  Settings,
-  Sun,
   Trash2,
-  Upload,
 } from "lucide-react";
 import {
   Dialog,
@@ -34,49 +30,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { getPathMessages, useChatStore } from "@/lib/store/useChatStore";
 import { useSettingsStore } from "@/lib/store/useSettingsStore";
-import { usePromptStore } from "@/lib/store/usePromptStore";
 import { openSettings } from "@/lib/store/ui";
 import {
-  backupFilename,
-  importBackup,
-  parseBackup,
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH,
-  serializeBackup,
-  type ImportResult,
 } from "@/lib/storage/export-import";
 import {
   buildResponsesSessionFile,
-  detectSessionFormat,
-  importResponsesSession,
-  importSessionBackup,
   markdownFilename,
-  parseResponsesSessionFile,
-  parseSessionBackup,
   responsesSessionFilename,
   sessionBackupFilename,
   sessionToMarkdown,
   serializeSessionBackup,
-  type SessionFileKind,
 } from "@/lib/storage/session-io";
-import type {
-  BackupData,
-  ResponsesSessionFile,
-  Session,
-  SessionBackupData,
-} from "@/lib/types";
+import type { Session } from "@/lib/types";
 import { cn, formatTime } from "@/lib/utils";
 
 /**
- * 左侧边栏（ui-design.md 4.6/4.7 + FR-14/FR-15）：
+ * 左侧边栏（ui-design.md 4.6/4.7 + FR-14/FR-16）：
  * - 桌面（md+）常驻：宽度可拖拽调整（200~480px，右缘手柄），可完全收起
  *   （sidebarCollapsed，顶栏汉堡按钮展开）；宽度/收起状态持久化于设置
  * - 移动端抽屉（open/onClose 由 page 层控制）
  * - NewChatButton / 搜索框 / ConversationList（updatedAt 倒序、当前高亮、
- *   hover 删除按钮带确认 Dialog、双击标题内联重命名）/ UserMenu
- * - 用户菜单：设置 / 深色模式 / 导出数据 / 导入数据（FR-15）/ 导入对话…（FR-16）
+ *   hover 删除按钮带确认 Dialog、双击标题内联重命名）/ 设置入口
+ * - 底部「设置与偏好」按钮：点击直接打开设置对话框（ui-design.md 4.8，FR-17）；
+ *   原下拉菜单中的深色模式/导出数据/导入数据/导入对话… 已移入设置对话框（外观/数据类别）
  * - 单会话导出（FR-16）：会话项 hover「导出」按钮 → 三格式菜单（本应用 JSON /
- *   OpenAI Responses 格式 / Markdown）；导入自动识别格式（本应用单会话 / Responses / 备份）
+ *   OpenAI Responses 格式 / Markdown）
  */
 export function Sidebar({
   open,
@@ -102,23 +82,10 @@ export function Sidebar({
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState("");
 
-  // 单会话导出/导入（FR-16）
+  // 单会话导出（FR-16）
   const [exportMenuId, setExportMenuId] = React.useState<string | null>(null);
-  const conversationFileInputRef = React.useRef<HTMLInputElement>(null);
-  const [pendingSessionImport, setPendingSessionImport] = React.useState<{
-    kind: SessionFileKind;
-    data: SessionBackupData | ResponsesSessionFile;
-    filename: string;
-  } | null>(null);
-  const [sessionImporting, setSessionImporting] = React.useState(false);
 
-  // 导出/导入（FR-15）
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [pendingImport, setPendingImport] = React.useState<{
-    data: BackupData;
-    filename: string;
-  } | null>(null);
-  const [importing, setImporting] = React.useState(false);
+  // 单会话导出反馈 toast
   const [toast, setToast] = React.useState<string | null>(null);
   const toastTimerRef = React.useRef<number | null>(null);
   const showToast = React.useCallback((msg: string) => {
@@ -190,71 +157,7 @@ export function Sidebar({
     document.body.style.userSelect = "none";
   };
 
-  // ---------- 导出/导入（FR-15） ----------
-
-  const handleExport = () => {
-    void (async () => {
-      await usePromptStore.getState().loadPrompts(); // 幂等：确保库条目已加载
-      const allSessions = useChatStore.getState().sessions;
-      const prompts = usePromptStore.getState().prompts;
-      const json = serializeBackup(allSessions, prompts);
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = backupFilename();
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      showToast(`已导出 ${allSessions.length} 个会话`);
-    })();
-  };
-
-  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // 允许重复选择同一文件
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = parseBackup(String(reader.result ?? ""));
-        setPendingImport({ data, filename: file.name });
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : "导入失败，请检查文件");
-      }
-    };
-    reader.onerror = () => showToast("读取文件失败");
-    reader.readAsText(file);
-  };
-
-  const confirmImport = async () => {
-    if (!pendingImport || importing) return;
-    setImporting(true);
-    try {
-      // 流式生成中先停止（FR-15 验收标准），避免导入覆盖进行中状态
-      const chatStore = useChatStore.getState();
-      if (chatStore.streaming) chatStore.stopStreaming();
-      const prevActive = chatStore.activeSessionId;
-      const result: ImportResult = await importBackup(pendingImport.data);
-      await usePromptStore.getState().loadPrompts(); // 库条目立即可见
-      await useChatStore.getState().loadAll(); // 会话立即可见（含迁移/状态归一）
-      const st = useChatStore.getState();
-      if (prevActive && st.sessions.some((s) => s.id === prevActive)) {
-        st.setActiveSession(prevActive);
-      }
-      setPendingImport(null);
-      showToast(
-        `导入 ${result.importedSessions} 个会话、${result.importedPrompts} 条 Prompt，跳过 ${result.skippedSessions + result.skippedPrompts} 项`
-      );
-    } catch {
-      showToast("导入失败，请检查文件后重试");
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  // ---------- 单会话导出/导入（FR-16） ----------
+  // ---------- 单会话导出（FR-16） ----------
 
   /** 触发浏览器下载文本文件 */
   const downloadTextFile = (
@@ -298,71 +201,6 @@ export function Sidebar({
     }
     setExportMenuId(null);
     showToast(`已导出「${session.title}」`);
-  };
-
-  /** 单会话导入：选择文件 → 识别格式 → 确认对话框（备份文件引导走「导入数据」） */
-  const handleConversationFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // 允许重复选择同一文件
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result ?? "");
-      try {
-        const kind = detectSessionFormat(text);
-        if (kind === null) {
-          showToast("无法识别的文件格式，请选择本应用会话或 OpenAI Responses 格式文件");
-          return;
-        }
-        if (kind === "backup") {
-          showToast("该文件是完整备份，请使用「导入数据」导入");
-          return;
-        }
-        const data =
-          kind === "session"
-            ? parseSessionBackup(text)
-            : parseResponsesSessionFile(text);
-        setPendingSessionImport({ kind, data, filename: file.name });
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : "导入失败，请检查文件");
-      }
-    };
-    reader.onerror = () => showToast("读取文件失败");
-    reader.readAsText(file);
-  };
-
-  /** 单会话导入确认：本应用格式同 id 跳过；Responses 格式重建为新会话 */
-  const confirmSessionImport = async () => {
-    const pending = pendingSessionImport;
-    if (!pending || sessionImporting) return;
-    setSessionImporting(true);
-    try {
-      // 流式生成中先停止（FR-16 验收标准）
-      const chatStore = useChatStore.getState();
-      if (chatStore.streaming) chatStore.stopStreaming();
-      if (pending.kind === "session") {
-        const data = pending.data as SessionBackupData;
-        const res = await importSessionBackup(data);
-        await useChatStore.getState().loadAll();
-        showToast(
-          res.imported
-            ? `已导入会话「${data.session.title}」`
-            : "本地已存在同 id 会话，已跳过（保留本地数据）"
-        );
-      } else {
-        const session = await importResponsesSession(
-          pending.data as ResponsesSessionFile,
-          useSettingsStore.getState().defaultModel
-        );
-        await useChatStore.getState().loadAll();
-        showToast(`已导入为「${session.title}」（${session.messages.length} 条消息）`);
-      }
-      setPendingSessionImport(null);
-    } catch {
-      showToast("导入失败，请检查文件后重试");
-    } finally {
-      setSessionImporting(false);
-    }
   };
 
   return (
@@ -527,47 +365,21 @@ export function Sidebar({
           )}
         </nav>
 
-        {/* 用户菜单 */}
+        {/* 设置入口（ui-design.md 4.8 / FR-17）：点击直接打开设置对话框；
+            原下拉菜单中的深色模式/导出数据/导入数据/导入对话… 已移入设置对话框 */}
         <div className="border-t border-border p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-muted/60"
-              >
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  D
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
-                  设置与偏好
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-52">
-              <DropdownMenuLabel>用户菜单</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={openSettings}>
-                <Settings />
-                设置
-              </DropdownMenuItem>
-              <DarkModeMenuItem />
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleExport}>
-                <Download />
-                导出数据
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
-                <Upload />
-                导入数据
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => conversationFileInputRef.current?.click()}
-              >
-                <FileText />
-                导入对话…
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            type="button"
+            onClick={openSettings}
+            className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-muted/60"
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+              D
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
+              设置与偏好
+            </span>
+          </button>
         </div>
 
         {/* 桌面端：右缘拖拽手柄 + 收起按钮（FR-14） */}
@@ -588,26 +400,6 @@ export function Sidebar({
           />
         </div>
       </aside>
-
-      {/* 隐藏的文件选择（导入数据，FR-15） */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,application/json"
-        className="hidden"
-        onChange={handleFileSelected}
-        aria-hidden
-      />
-
-      {/* 隐藏的文件选择（导入对话，FR-16：本应用单会话 JSON / OpenAI Responses 格式） */}
-      <input
-        ref={conversationFileInputRef}
-        type="file"
-        accept=".json,application/json"
-        className="hidden"
-        onChange={handleConversationFileSelected}
-        aria-hidden
-      />
 
       {/* 删除确认 */}
       <Dialog
@@ -643,80 +435,6 @@ export function Sidebar({
         </DialogContent>
       </Dialog>
 
-      {/* 导入确认（FR-15：先展示将导入的内容与冲突说明，确认后写库） */}
-      <Dialog
-        open={pendingImport !== null}
-        onOpenChange={(o) => {
-          if (!o && !importing) setPendingImport(null);
-        }}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>导入数据</DialogTitle>
-            <DialogDescription>
-              「{pendingImport?.filename}」包含 {pendingImport?.data.sessions.length}{" "}
-              个会话、{pendingImport?.data.prompts.length} 条 Prompt。
-              与本地 id 相同的会话/条目将跳过（保留本地数据）。确认导入？
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPendingImport(null)} disabled={importing}>
-              取消
-            </Button>
-            <Button onClick={confirmImport} disabled={importing}>
-              {importing ? "导入中…" : "导入"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* 单会话导入确认（FR-16：识别格式后展示标题/消息数/冲突处理，确认后导入） */}
-      <Dialog
-        open={pendingSessionImport !== null}
-        onOpenChange={(o) => {
-          if (!o && !sessionImporting) setPendingSessionImport(null);
-        }}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>导入对话</DialogTitle>
-            <DialogDescription>
-              {/* 空值守卫：关闭动画期间内容仍挂载（pendingSessionImport 已置 null），
-                  此时渲染空内容而非访问 null.data */}
-              {pendingSessionImport ? (
-                <>
-                  「{pendingSessionImport.filename}」是
-                  {pendingSessionImport.kind === "session"
-                    ? "本应用导出的单会话文件"
-                    : "OpenAI Responses 格式会话"}
-                  ，包含{" "}
-                  {pendingSessionImport.kind === "session"
-                    ? (pendingSessionImport.data as SessionBackupData).session.messages.length
-                    : (pendingSessionImport.data as ResponsesSessionFile).items.length}{" "}
-                  条消息。
-                  {pendingSessionImport.kind === "session"
-                    ? `标题「${(pendingSessionImport.data as SessionBackupData).session.title}」；本地已有同 id 会话时将跳过（保留本地数据）。`
-                    : `标题「${(pendingSessionImport.data as ResponsesSessionFile).title}」；将作为新会话导入。`}
-                  确认导入？
-                </>
-              ) : null}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setPendingSessionImport(null)}
-              disabled={sessionImporting}
-            >
-              取消
-            </Button>
-            <Button onClick={() => void confirmSessionImport()} disabled={sessionImporting}>
-              {sessionImporting ? "导入中…" : "导入"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* 操作反馈 toast（与设置页保存提示同款样式；进入动画见 ui-design.md 3.4） */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 animate-slide-up rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg">
@@ -724,17 +442,5 @@ export function Sidebar({
         </div>
       )}
     </>
-  );
-}
-
-/** 用户菜单中的深色模式快捷切换 */
-function DarkModeMenuItem() {
-  const darkMode = useSettingsStore((s) => s.darkMode);
-  const toggleDarkMode = useSettingsStore((s) => s.toggleDarkMode);
-  return (
-    <DropdownMenuItem onSelect={toggleDarkMode}>
-      {darkMode ? <Sun /> : <Moon />}
-      深色模式 {darkMode ? "开" : "关"}
-    </DropdownMenuItem>
   );
 }

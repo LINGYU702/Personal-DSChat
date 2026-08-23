@@ -16,8 +16,8 @@
 │  │  · 会话2            │ │   [用户消息 右对齐气泡]                     ││
 │  │  · …（搜索框）       │ │   [助手消息 左对齐整宽 + 思考/引用/正文]      ││
 │  │                     │ │──────────────────────────────────────────││
-│  │ 用户菜单（设置/关于/ │ │  ChatInput（底部输入区，居中 max-w-3xl）     ││
-│  │ 导出/导入）          │ │  [多行输入框] [深度思考] [联网搜索] [发送]    ││
+│  │ 设置与偏好按钮       │ │  ChatInput（底部输入区，居中 max-w-3xl）     ││
+│  │ （点击打开设置对话框） │ │  [多行输入框] [深度思考] [联网搜索] [发送]    ││
 │  └────────────────────┘ │┘ 右缘拖拽手柄（桌面，调整宽度 / 收起入口）     │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -39,7 +39,7 @@ app/page.tsx（客户端）
     │   ├── <ConversationSearch />     // 会话搜索框（过滤列表）
     │   ├── <ConversationList />       // 按 updatedAt 倒序；当前项高亮
     │   │   └── <ConversationItem />   // 标题 + 删除(×)；双击/菜单重命名
-    │   └── <UserMenu />               // 头像/菜单：设置、深色模式切换、导出数据、导入数据
+    │   └── <UserMenu />               // 「设置与偏好」按钮（点击直接打开设置对话框，无下拉菜单）
     ├── <Topbar>
     │   ├── <ModelSelect />            // 下拉：DeepSeek-V4 Flash / DeepSeek-V4 Pro
     │   ├── <PromptBadge />            // System Prompt 只读标识（已锁定会话）/「更换」入口（空会话）
@@ -61,7 +61,10 @@ app/page.tsx（客户端）
     │       ├── <WebSearchToggle />         // 联网搜索开关
     │       ├── <ContextSizeLabel />        // 发送按钮左侧：上下文大小（悬浮显示上一轮用量）
     │       └── <SendButton /> / <StopButton />
-    └── <SettingsDialog>（Modal）    // 设置表单（见 settings.md）；「管理 System Prompt 库…」按钮打开独立弹窗
+    └── <SettingsDialog>（Modal，双栏，尺寸与库管理弹窗一致）// 设置（见 settings.md）
+        ├── 左栏 <CategoryNav />        // 类别导航：账户 / 通用 / 对话 / 外观 / 数据（右缘分隔线可拖拽 200~420px）
+        └── 右栏 <CategoryPanel />      // 当前类别条目 + 底部「取消/保存」操作条
+            └── <DataSettings />        // 「数据」类别：导出/导入/导入对话…/清除本地数据 + 确认弹窗 + 隐藏文件输入
 
 独立弹窗：
 ├── <PromptLibraryDialog>（Modal，860px 双栏）// System Prompt 库管理（见 prompt-library.md 第 4.3 节）
@@ -69,6 +72,10 @@ app/page.tsx（客户端）
 │   │   └── 「新建 System Prompt」按钮
 │   └── 右栏 <PromptEditor />         // 名称输入 + 内容 textarea + 保存（内置只读）
 └── <PromptSelectDialog>（新会话选择器）// 欢迎视图卡片/顶栏入口弹出（见 prompt-library.md 第 4.1 节）
+
+设置内嵌确认弹窗（挂载于 SettingsDialog 内，叠加在设置对话框之上）：
+├── <导入数据确认> / <导入对话确认>     // 数据类别导入确认（FR-15/FR-16，逻辑见 DataSettings）
+└── <PromptLibraryDialog>            // 由「管理 System Prompt 库…」打开（叠加）
 ```
 
 ## 3. 视觉规范
@@ -186,6 +193,7 @@ app/page.tsx（客户端）
   - 「导出为 Responses 格式」→ 下载 `<净化标题>-responses-session.json`（OpenAI Responses 格式，8.3.2）
   - 「导出为 Markdown」→ 下载 `<净化标题>-YYYYMMDD-HHmmss.md`（8.3.3）
   - 流式生成中的会话禁用导出（按钮 disabled + title 说明）
+  - （本菜单保留在边栏；**全量导出/导入入口已移至设置对话框「数据」类别**，见 4.8）
 - 会话搜索：按标题模糊过滤
 - 移动端（<768px）：边栏为抽屉，顶栏汉堡按钮开合，遮罩点击关闭
 
@@ -199,16 +207,24 @@ app/page.tsx（客户端）
 
 ### 4.8 设置入口
 
-- 边栏底部用户菜单（圆形头像占位「D」）→ 下拉：设置 / 切换深色模式 / 导出数据 / 导入数据 / 导入对话…
-- **导入对话…（FR-16）**：隐藏 `input[type=file]`（accept `.json,application/json`）→ FileReader 读取 → `detectSessionFormat` 识别格式：
+- 边栏底部「设置与偏好」按钮（圆形头像占位「D」+ 文字标签）→ 点击**直接打开设置对话框**，**不再有下拉菜单**；
+  原下拉中的「深色模式快捷切换 / 导出数据 / 导入数据 / 导入对话…」**全部移入设置对话框**对应类别
+  （外观 → 深色模式；数据 → 导出/导入/导入对话…/清除本地数据），入口唯一化（FR-17）
+- **导出数据**：设置对话框「数据」类别 → 将全部会话 + 自定义 System Prompt 库序列化为 JSON
+  （见 session-storage.md 第 8 节），触发浏览器下载，完成后底部 toast「已导出 N 个会话」
+- **导入数据**：设置对话框「数据」类别 → 隐藏 `input[type=file]`（accept `.json,application/json`）→ FileReader 解析 →
+  先弹确认对话框（显示将导入的会话/库条目数，说明同 id 冲突项将跳过）→ 确认后写库 → 重载会话 store →
+  toast「导入 N、跳过 M」；格式/版本不符给出明确错误，不写入任何数据
+- **导入对话…（FR-16）**：设置对话框「数据」类别 → 隐藏 `input[type=file]`（accept `.json,application/json`）→
+  FileReader 读取 → `detectSessionFormat` 识别格式：
   - 本应用单会话 JSON → 确认对话框（标题、消息数、同 id 将跳过说明）→ 写库（同 id 跳过保留本地）→ toast「已导入会话」（冲突时「跳过 M」）
   - OpenAI Responses 格式 → 确认对话框（标题、消息数、将创建新会话说明）→ 重建为新会话 → toast「已导入为「{标题}」」
   - 全量备份文件（deepseek-chat-backup）→ 明确提示「请使用『导入数据』导入备份文件」，不写入任何数据
   - 非法 JSON / 无法识别格式 / version 不符 → 明确错误提示
   - 导入前若正在流式生成先停止生成；完成后重载会话 store
-- 导出数据：将全部会话 + 自定义 System Prompt 库序列化为 JSON（见 session-storage.md 第 8 节），触发浏览器下载，完成后底部 toast「已导出 N 个会话」
-- 导入数据：隐藏 `input[type=file]`（accept `.json,application/json`）→ FileReader 解析 → 先弹确认对话框（显示将导入的会话/库条目数，说明同 id 冲突项将跳过）→ 确认后写库 → 重载会话 store → toast「导入 N、跳过 M」；格式/版本不符给出明确错误，不写入任何数据
-- 设置对话框：居中 Modal（宽 480px），表单见 settings.md
+- 设置对话框：双栏弹窗（左类别导航 + 右条目面板，中间分隔线可拖拽），尺寸与 System Prompt 库管理弹窗一致，
+  表单草稿 + 「取消/保存」，详见 settings.md；未配置 Key 时发送消息自动打开并默认选中「账户」类别
+- 以上确认对话框与隐藏文件输入**挂载在设置对话框组件内**（叠加在设置对话框之上，共用同一 store 与 toast 样式）
 
 ### 4.9 System Prompt 选择与锁定标识（FR-11）
 

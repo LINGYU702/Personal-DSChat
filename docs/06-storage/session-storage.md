@@ -163,7 +163,7 @@ export function saveSettings(s: Settings) {
 
 ## 8. 数据备份（导出/导入，FR-15）
 
-> 入口在侧边栏用户菜单（「导出数据」/「导入数据」）；核心逻辑在 `lib/storage/export-import.ts`（纯函数可单测），UI 见 ui-design.md 4.8。
+> 入口在设置对话框「数据」类别（「导出数据」/「导入数据」，见 ui-design.md 4.8）；核心逻辑在 `lib/storage/export-import.ts`（纯函数可单测）。
 
 ### 8.1 备份文件格式
 
@@ -195,7 +195,7 @@ export interface BackupData {
 
 ### 8.3 单会话导出/导入（FR-16）
 
-> 入口：侧边栏会话项 hover「导出」菜单（三种格式）+ 用户菜单「导入对话…」（识别格式导入）；
+> 入口：侧边栏会话项 hover「导出」菜单（三种格式）+ 设置对话框「数据」类别「导入对话…」（识别格式导入）；
 > 核心逻辑在 `lib/storage/session-io.ts`（纯函数可单测，复用 export-import.ts 的 `timestampPart`/`hasSession`/`isValidSession`），UI 见 ui-design.md 4.7/4.8。
 
 #### 8.3.1 格式 A：本应用单会话 JSON
@@ -286,7 +286,7 @@ export interface ResponsesSessionFile {
   轮次之间 `---` 分隔；无思考/无正文的段落省略；分支会话导出当前路径
 - 纯展示格式，**不支持导入**
 
-#### 8.3.4 格式识别与导入分流（用户菜单「导入对话…」）
+#### 8.3.4 格式识别与导入分流（设置对话框「数据」类别「导入对话…」）
 
 - `detectSessionFormat(json)` 按顶层 `format` 字段识别：`"backup" | "session" | "responses" | null`
 - 识别结果分流：
