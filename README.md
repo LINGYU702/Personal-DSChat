@@ -6,8 +6,6 @@
 
 一个基于 **DeepSeek API** 的仿官方网页端对话应用，支持**数学公式、代码高亮、Mermaid 图表、图片与多格式文档上传、对话分支**等完整功能。
 
-> 🌐 **在线使用**：[https://LINGYU702.github.io/Personal-DSChat/](https://LINGYU702.github.io/Personal-DSChat/)
-
 ---
 
 ## ✨ 功能特性
