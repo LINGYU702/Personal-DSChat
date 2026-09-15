@@ -1,5 +1,119 @@
 # DeepSeek Chat — 仿 DeepSeek 网页端的对话应用
 
+{写在前面}
+{这个项目完全基于个人需求使用DeepSeek辅助制作，并不能保证后续的维护工作（因为我也是刚学计科）}
+{# Personal-DSChat
+
+一个基于 **DeepSeek API** 的仿官方网页端对话应用，支持**数学公式、代码高亮、Mermaid 图表、图片与多格式文档上传、对话分支**等完整功能。
+
+> 🌐 **在线使用**：[https://LINGYU702.github.io/Personal-DSChat/](https://LINGYU702.github.io/Personal-DSChat/)
+
+---
+
+## ✨ 功能特性
+
+### 💬 对话体验
+- **多会话管理**：本地持久化（IndexedDB）、重命名、搜索、深色模式
+- **对话分支**：编辑任意用户消息或重新生成回复即创建分支，旧分支保留可切换
+- **System Prompt 库**：内置基础提示词 + 自定义条目管理，会话级快照
+- **上下文缓存**：前缀稳定策略最大化硬盘缓存命中，展示 token 用量与缓存命中率
+- **流式体验**：SSE 逐 token 渲染 + 帧级节流，长文本不卡顿
+
+### 📐 数学与排版
+- **行内与块级公式**：基于 Streamdown + KaTeX 渲染，自动归一化多种 LaTeX 方言
+- **公式配色**：支持 `\color{}` 命令，不同变量可区分颜色
+- **Mermaid 图表**：支持流程图、时序图、状态图等，语法错误自动降级
+- **代码高亮**：基于 Shiki，支持多语言语法着色与复制按钮
+- **表格与列表**：斑马纹、hover 高亮、横向滚动
+
+### 📎 文件上传
+- **图片上传**：支持 JPEG/PNG/GIF/WebP，气泡内显示缩略图，点击放大预览
+- **文档上传**：支持 `.txt / .md / .json / .csv / .log / .xml / .yaml / .pdf / .docx / .pptx`
+- **本地解析**：浏览器端提取纯文本，PDF 按页分隔、PPT 提取表格结构
+
+### 🎛️ 交互细节
+- **深度思考**：开关 + 强度调节（低/高/最高），思维链可折叠查看
+- **联网搜索**：服务端 `web_search` 工具，展示搜索状态与引用
+- **数据备份**：全部会话 + System Prompt 库一键导出/导入为 JSON
+- **单会话导出**：支持导出为本应用 JSON / OpenAI Responses 格式 / Markdown
+
+
+**使用步骤**：
+
+1. 打开页面，点击左下角的**设置**
+2. 填入你自己的 **DeepSeek API Key**（从 [platform.deepseek.com](https://platform.deepseek.com/api_keys) 获取）
+3. 返回对话界面，选择模型（推荐 **DeepSeek-V4 Flash**）
+4. 开始对话
+
+> 🔒 **安全说明**：API Key 仅保存在**你本机浏览器的 localStorage** 中，请求直接从浏览器发送给 DeepSeek 官方，不经过任何第三方服务器。
+
+---
+
+## 💻 本地运行
+
+### 环境要求
+
+- Node.js 18 或更高版本
+- npm / pnpm / yarn（任选其一）
+
+### 步骤
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/LINGYU702/Personal-DSChat.git
+cd Personal-DSChat
+
+# 2. 安装依赖
+npm install
+
+# 3. 启动开发服务器
+npm run dev
+
+# 4. 浏览器打开 http://localhost:3000
+
+🙏 致谢
+本项目基于 shine-yu-student/api_chat 二次开发。
+
+衷心感谢原作者的杰出工作！原项目提供了完整的架构设计、精细的功能规划、详尽的文档体系，以及高度还原 DeepSeek 官方网页端的界面实现，为本项目奠定了坚实的地基。没有原作者的贡献，就不会有这个项目的诞生。
+
+本项目在原项目基础上进行了以下主要改造：
+
+🔄 Markdown 渲染引擎：从 react-markdown 切换为 Streamdown，从根本上解决流式渲染下公式解析不稳定、LaTeX 方言兼容性差的问题
+
+📐 公式渲染增强：支持行内/块级公式、公式配色、多种 LaTeX 方言自动归一化
+
+📊 Mermaid 图表支持：接入 @streamdown/mermaid，支持流程图、时序图等
+
+📎 多格式文件上传：新增 PDF、Word、PPT、纯文本等文件的本地解析与上传
+
+🖼️ 图片上传与预览：支持气泡内缩略图、点击全屏放大
+
+🎨 排版美学优化：加大行高、段落间距、表格内边距，长公式独立成段
+
+🔧 PPT 表格解析修复：修复表格内容显示为 [object Object] 的问题
+
+📏 文件长度上限调整：适配 DeepSeek V4 的 1M token 上下文窗口
+
+也感谢以下开源项目：
+
+Streamdown — 专为 AI 流式输出设计的 Markdown 渲染器
+
+KaTeX — 高性能数学公式渲染
+
+Shiki — VS Code 同款代码高亮引擎
+
+DeepSeek — 提供强大的 API 能力
+
+⚠️ 免责声明
+本项目仅供个人学习与研究使用，请勿用于商业用途
+
+API Key 由使用者自行提供，所有调用费用由使用者承担
+
+请遵守 DeepSeek 服务条款 及所在地区法律法规
+
+因使用本项目产生的任何后果，作者不承担责任}
+
+- 原作者的话如下：
 基于 **DeepSeek Responses API**（OpenAI 兼容格式）的网页对话应用，界面整体仿照 [DeepSeek 网页端](https://chat.deepseek.com)。
 支持模型切换、深度思考、服务端联网搜索、System Prompt 库、对话分支与上下文缓存利用。
 
